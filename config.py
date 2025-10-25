@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=2000, env="LLM_MAX_TOKENS")
     
     # Embedding Configuration
-    embedding_provider: Literal["openai", "huggingface", "local"] = Field(
+    embedding_provider: Literal["openai", "google", "huggingface", "local"] = Field(
         default="local", env="EMBEDDING_PROVIDER"
     )
     embedding_model: str = Field(
