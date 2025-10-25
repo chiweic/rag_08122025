@@ -273,13 +273,17 @@ async def initialize_system(request: InitializeRequest = InitializeRequest()):
             logger.info("Generating embeddings...")
             texts = [doc['text'] for doc in documents]
             embeddings_list = []
-            
+
             # Process in batches to avoid memory issues
             batch_size = 50
+            total_batches = (len(texts) + batch_size - 1) // batch_size
             for i in range(0, len(texts), batch_size):
+                batch_num = i // batch_size + 1
                 batch = texts[i:i + batch_size]
+                logger.info(f"Processing embedding batch {batch_num}/{total_batches} ({len(batch)} texts)...")
                 batch_embeddings = embeddings.embed_documents(batch)
                 embeddings_list.extend(batch_embeddings)
+                logger.info(f"Batch {batch_num}/{total_batches} complete")
             
             # Upload to vector store
             vector_store.add_documents(
