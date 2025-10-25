@@ -1,0 +1,6 @@
+{
+  "provider": "local",
+  "model": "BAAI/bge-base-zh-v1.5",
+  "timestamp": 1755296113.3990998,
+  "dimension": 768
+}

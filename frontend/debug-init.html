@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Init</title>
+</head>
+<body>
+    <h1>Debug Initialization</h1>
+    <div id="debug-output"></div>
+
+    <script>
+        // Test if all required DOM elements exist
+        function debugDOMElements() {
+            const elements = [
+                'chat-container',
+                'query-input', 
+                'send-button',
+                'status-text',
+                'references-panel',
+                'references-content',
+                'book-recommendations',
+                'performance-canvas'
+            ];
+            
+            const results = [];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                results.push(`${id}: ${element ? '✅ Found' : '❌ Missing'}`);
+            });
+            
+            document.getElementById('debug-output').innerHTML = 
+                '<h3>DOM Elements Check:</h3><pre>' + results.join('\n') + '</pre>';
+        }
+        
+        // Run debug when page loads
+        document.addEventListener('DOMContentLoaded', debugDOMElements);
+    </script>
+</body>
+</html>

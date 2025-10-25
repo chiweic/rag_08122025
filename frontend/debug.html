@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testQuery()">Test Query</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testConnection() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                console.log('Connection test:', data);
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Error: ${error.message}</pre>`;
+                console.error('Connection error:', error);
+            }
+        }
+        
+        async function testQuery() {
+            try {
+                const response = await fetch('/query/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: "測試",
+                        text_limit: 1,
+                        audio_limit: 1,
+                        event_limit: 1,
+                        similarity_threshold: 0.3,
+                        include_sources: true,
+                        temperature: 0.7,
+                        max_tokens: 100
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                document.getElementById('result').innerHTML = 'Streaming query working...';
+                console.log('Query test: Streaming started');
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Query Error: ${error.message}</pre>`;
+                console.error('Query error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

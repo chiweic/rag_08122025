@@ -1,0 +1,31 @@
+# Core Dependencies
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-dotenv==1.0.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# LangChain for RAG Framework
+langchain==0.3.13
+langchain-community==0.3.13
+langchain-openai==0.2.10
+langchain-google-genai==2.0.7
+
+# Vector Database
+qdrant-client==1.12.1
+
+# Embeddings
+sentence-transformers==3.3.1
+torch>=2.0.0
+
+# LLM Providers
+openai==1.57.0
+google-generativeai==0.8.3
+
+# Utilities
+numpy==1.26.4
+tqdm==4.67.1
+python-multipart==0.0.18
+
+# CORS support
+fastapi-cors==0.0.6
