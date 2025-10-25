@@ -27,8 +27,20 @@ pip install -r requirements.txt
 Ensure your `.env` file contains the necessary API keys and settings.
 
 4. **Start Qdrant** (if not already running):
+
+**Option A - Using Docker Compose (Recommended)**:
 ```bash
-docker run -p 6333:6333 qdrant/qdrant
+docker-compose up -d
+```
+
+**Option B - Using Docker directly**:
+```bash
+docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
+```
+
+To stop Qdrant:
+```bash
+docker-compose down
 ```
 
 ## Running the Application
