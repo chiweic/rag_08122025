@@ -122,10 +122,19 @@ class EmbeddingFactory:
         elif provider == "google":
             if not settings.google_api_key:
                 raise ValueError("Google API key not found in settings")
-            return GoogleGenerativeAIEmbeddings(
-                google_api_key=settings.google_api_key,
-                model=model or "models/embedding-001"
-            )
+
+            # Google embeddings support output_dimensionality (768, 1536, or 3072)
+            embedding_kwargs = {
+                "google_api_key": settings.google_api_key,
+                "model": model or "models/embedding-001"
+            }
+
+            # Add output_dimensionality if dimension is specified and not default 768
+            if settings.embedding_dimension and settings.embedding_dimension != 768:
+                embedding_kwargs["output_dimensionality"] = settings.embedding_dimension
+                logger.info(f"Using Google embeddings with output_dimensionality={settings.embedding_dimension}")
+
+            return GoogleGenerativeAIEmbeddings(**embedding_kwargs)
         
         elif provider in ["huggingface", "local"]:
             # Use HuggingFace embeddings for local models
