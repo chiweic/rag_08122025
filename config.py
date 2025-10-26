@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # Custom LLM Configuration
     custom_llm_base_url: Optional[str] = Field(default=None, env="CUSTOM_LLM_BASE_URL")
     custom_llm_api_key: Optional[str] = Field(default="empty", env="CUSTOM_LLM_API_KEY")
+
+    # Ollama Configuration
+    ollama_base_url: Optional[str] = Field(default=None, env="OLLAMA_BASE_URL")
+    ollama_api_key: Optional[str] = Field(default=None, env="OLLAMA_API_KEY")
+    ollama_max_workers: int = Field(default=10, env="OLLAMA_MAX_WORKERS")
     
     # LLM Configuration
     llm_provider: Literal["openai", "deepseek", "google", "dashscope", "custom"] = Field(
@@ -27,7 +32,7 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=2000, env="LLM_MAX_TOKENS")
     
     # Embedding Configuration
-    embedding_provider: Literal["openai", "google", "huggingface", "local"] = Field(
+    embedding_provider: Literal["openai", "google", "huggingface", "local", "ollama"] = Field(
         default="local", env="EMBEDDING_PROVIDER"
     )
     embedding_model: str = Field(

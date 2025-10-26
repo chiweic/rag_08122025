@@ -6,6 +6,7 @@ from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.embeddings import Embeddings
 import logging
 from config import settings
+from ollama_embeddings import OllamaEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -139,38 +140,38 @@ class EmbeddingFactory:
         elif provider in ["huggingface", "local"]:
             # Use HuggingFace embeddings for local models
             model_name = model or "BAAI/bge-small-zh-v1.5"
-            
+
             # Check if it's a local path
             import os
             import torch
-            
-            # GPU fallback mechanism - try devices in order of preference  
+
+            # GPU fallback mechanism - try devices in order of preference
             devices_to_try = ['cuda:1', 'cuda:0', 'cuda', 'cpu']
             device = 'cpu'  # Default fallback
-            
+
             for test_device in devices_to_try:
                 try:
                     if test_device.startswith('cuda') and not torch.cuda.is_available():
                         continue
-                    
+
                     # Test if device works with a simple operation
                     if test_device.startswith('cuda'):
                         test_tensor = torch.randn(10).to(test_device)
                         _ = test_tensor * 2  # Simple operation to test compatibility
-                    
+
                     device = test_device
                     logger.info(f"Using device: {device} for embeddings")
                     break
-                    
+
                 except Exception as e:
                     logger.warning(f"Device {test_device} failed, trying next: {e}")
                     continue
-            
+
             if device == 'cpu':
                 logger.info("Using CPU for embeddings (GPU compatibility issues)")
             else:
                 logger.info(f"Successfully using GPU device: {device}")
-            
+
             if os.path.exists(model_name):
                 logger.info(f"Loading local fine-tuned model from: {model_name}")
                 return HuggingFaceEmbeddings(
@@ -185,7 +186,19 @@ class EmbeddingFactory:
                     model_kwargs={'device': device},
                     encode_kwargs={'normalize_embeddings': True}
                 )
-        
+
+        elif provider == "ollama":
+            if not settings.ollama_base_url:
+                raise ValueError("Ollama base URL not found in settings")
+
+            logger.info(f"Using Ollama embeddings from {settings.ollama_base_url} with {settings.ollama_max_workers} workers")
+            return OllamaEmbeddings(
+                base_url=settings.ollama_base_url,
+                model=model or "bge-m3",
+                api_key=settings.ollama_api_key,
+                max_workers=settings.ollama_max_workers
+            )
+
         else:
             raise ValueError(f"Unsupported embedding provider: {provider}")
     
@@ -243,6 +256,11 @@ class EmbeddingFactory:
                     "intfloat/multilingual-e5-large": 1024,
                     "intfloat/multilingual-e5-base": 768,
                     "intfloat/multilingual-e5-small": 384
+                },
+                "ollama": {
+                    "bge-m3": 1024,
+                    "bge-large": 1024,
+                    "nomic-embed-text": 768
                 }
             }
             
