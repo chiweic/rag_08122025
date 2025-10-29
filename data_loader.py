@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+# class
 class ChunkDataLoader:
     def __init__(self, chunks_dir: str = "chunks"):
         self.chunks_dir = Path(chunks_dir)
@@ -16,20 +16,29 @@ class ChunkDataLoader:
             raise ValueError(f"Chunks directory {chunks_dir} does not exist")
     
     def load_all_chunks(self) -> List[Dict[str, Any]]:
-        """Load all chunks from text_chunks.jsonl file in the chunks directory."""
+        """Load all chunks from all .jsonl files (text, audio, event) in the chunks directory."""
         all_chunks = []
-        file_path = self.chunks_dir / "text_chunks.jsonl"
-        
-        if not file_path.exists():
-            logger.warning(f"text_chunks.jsonl not found in {self.chunks_dir}")
-            return all_chunks
-        
-        logger.info(f"Loading chunks from text_chunks.jsonl")
-        
-        chunks = self.load_jsonl_file(file_path)
-        all_chunks.extend(chunks)
-        logger.info(f"Loaded {len(chunks)} chunks from text_chunks.jsonl")
-        
+
+        # Load all three chunk types
+        chunk_files = [
+            "text_chunks.jsonl",
+            "audio_chunks.jsonl",
+            "event_chunks.jsonl"
+        ]
+
+        for filename in chunk_files:
+            file_path = self.chunks_dir / filename
+
+            if not file_path.exists():
+                logger.warning(f"{filename} not found in {self.chunks_dir}")
+                continue
+
+            logger.info(f"Loading chunks from {filename}")
+
+            chunks = self.load_jsonl_file(file_path)
+            all_chunks.extend(chunks)
+            logger.info(f"Loaded {len(chunks)} chunks from {filename}")
+
         logger.info(f"Total chunks loaded: {len(all_chunks)}")
         return all_chunks
     

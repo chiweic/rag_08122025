@@ -12,14 +12,19 @@ import sys
 from datetime import datetime
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+from dotenv import load_dotenv
+import os
 
-# Configuration
-DASHSCOPE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-DASHSCOPE_API_KEY = "sk-a90d848a7c794e29b55881dfe8371642"
-DASHSCOPE_MODEL = "text-embedding-v4"
-QDRANT_URL = "http://localhost:6333"
-QDRANT_COLLECTION = "ddm_rag"
-EMBEDDING_DIM = 1024
+load_dotenv()
+# Configurations
+# dashscope etc.,
+DASHSCOPE_URL = os.getenv("DASHSCOPE_URL")
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
+DASHSCOPE_MODEL = os.getenv("DASHSCOPE_MODEL")
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "documents_dashscope")
+EMBEDDING_DIM = os.getenv("EMBEDDING_DIMENSION")
+
 BATCH_SIZE = 50  # Process 50 documents at a time
 UPLOAD_BATCH_SIZE = 100  # Upload to Qdrant in batches of 100
 
