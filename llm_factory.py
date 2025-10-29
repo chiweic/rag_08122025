@@ -7,6 +7,7 @@ from langchain.schema.embeddings import Embeddings
 import logging
 from config import settings
 from ollama_embeddings import OllamaEmbeddings
+from dashscope_embeddings import DashScopeEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,17 @@ class EmbeddingFactory:
                 max_workers=settings.ollama_max_workers
             )
 
+        elif provider == "dashscope":
+            if not settings.dashscope_api_key:
+                raise ValueError("DashScope API key not found in settings")
+            # DashScope uses custom wrapper for compatibility
+            logger.info(f"Using DashScope embeddings with model {model}")
+            return DashScopeEmbeddings(
+                api_key=settings.dashscope_api_key,
+                model=model or "text-embedding-v4",
+                max_workers=1  # Sequential processing to avoid rate limits
+            )
+
         else:
             raise ValueError(f"Unsupported embedding provider: {provider}")
     
@@ -261,6 +273,10 @@ class EmbeddingFactory:
                     "bge-m3": 1024,
                     "bge-large": 1024,
                     "nomic-embed-text": 768
+                },
+                "dashscope": {
+                    "text-embedding-v3": 1024,
+                    "text-embedding-v4": 1024
                 }
             }
             

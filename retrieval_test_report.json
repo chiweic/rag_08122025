@@ -1,0 +1,991 @@
+{
+  "summary": {
+    "total_tests": 22,
+    "passed": 19,
+    "failed": 3,
+    "pass_rate": 86.36363636363636
+  },
+  "performance": {
+    "avg_retrieval_time": 0.6218195069919933,
+    "min_retrieval_time": 0.4508357048034668,
+    "max_retrieval_time": 1.3864092826843262,
+    "median_retrieval_time": 0.5716094970703125
+  },
+  "relevance": {
+    "avg_score": 0.6457621540909091,
+    "min_score": 0.5319569,
+    "max_score": 0.7852676,
+    "median_score": 0.642372325
+  },
+  "by_category": {
+    "core_teachings": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "practice": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    "ethics": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
+    "cosmology": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
+    "pure_land": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "figures": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "monastic": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "daily_life": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "philosophy": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
+    "advanced": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "failed_tests": [
+    {
+      "query": "什麼是六度？",
+      "category": "ethics",
+      "reason": "Low relevance score: 0.551 < 0.6",
+      "description": "Test retrieval of Six Perfections"
+    },
+    {
+      "query": "佛教對生死的看法",
+      "category": "cosmology",
+      "reason": "Low coverage: keywords 25.0%, topics 0.0%",
+      "description": "Test retrieval of life and death views"
+    },
+    {
+      "query": "什麼是空？",
+      "category": "philosophy",
+      "reason": "Low coverage: keywords 25.0%, topics 0.0%",
+      "description": "Test retrieval of Emptiness"
+    }
+  ],
+  "detailed_results": [
+    {
+      "test_case": {
+        "query": "四聖諦的意義是什麼？",
+        "category": "core_teachings",
+        "description": "Test retrieval of Four Noble Truths",
+        "expected_keywords": [
+          "四聖諦",
+          "苦",
+          "集",
+          "滅",
+          "道"
+        ],
+        "expected_topics": [
+          "四聖諦的意義與重要性",
+          "原始佛教與四聖諦",
+          "八正道"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 1.3864092826843262,
+        "top_k_results": 5,
+        "found_keywords": [
+          "四聖諦",
+          "苦",
+          "集",
+          "滅",
+          "道"
+        ],
+        "found_topics": [
+          "四聖諦的意義與重要性",
+          "八正道"
+        ],
+        "relevance_scores": [
+          0.7146873,
+          0.6632007,
+          0.6360134,
+          0.6353134,
+          0.63111013
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "什麼是八正道？",
+        "category": "core_teachings",
+        "description": "Test retrieval of Eightfold Path",
+        "expected_keywords": [
+          "八正道",
+          "正見",
+          "正思",
+          "正語",
+          "正業"
+        ],
+        "expected_topics": [
+          "八正道",
+          "道諦",
+          "修行"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.5890898704528809,
+        "top_k_results": 5,
+        "found_keywords": [
+          "八正道",
+          "正見",
+          "正思",
+          "正語",
+          "正業"
+        ],
+        "found_topics": [
+          "八正道"
+        ],
+        "relevance_scores": [
+          0.7852676,
+          0.6924449,
+          0.6463769,
+          0.6324556,
+          0.624462
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "五蘊是什麼？",
+        "category": "core_teachings",
+        "description": "Test retrieval of Five Aggregates",
+        "expected_keywords": [
+          "五蘊",
+          "色",
+          "受",
+          "想",
+          "行",
+          "識"
+        ],
+        "expected_topics": [
+          "五蘊",
+          "無我",
+          "緣起"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.8100488185882568,
+        "top_k_results": 5,
+        "found_keywords": [
+          "五蘊",
+          "受",
+          "想",
+          "識",
+          "色",
+          "行"
+        ],
+        "found_topics": [
+          "五蘊"
+        ],
+        "relevance_scores": [
+          0.72206175,
+          0.7202779,
+          0.6967067,
+          0.68940234,
+          0.66647846
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "什麼是三法印？",
+        "category": "core_teachings",
+        "description": "Test retrieval of Three Dharma Seals",
+        "expected_keywords": [
+          "三法印",
+          "無常",
+          "無我",
+          "涅槃"
+        ],
+        "expected_topics": [
+          "三法印",
+          "佛法",
+          "真理"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.9152369499206543,
+        "top_k_results": 5,
+        "found_keywords": [
+          "三法印",
+          "無常",
+          "無我",
+          "涅槃"
+        ],
+        "found_topics": [
+          "三法印",
+          "佛法"
+        ],
+        "relevance_scores": [
+          0.7149086,
+          0.63160807,
+          0.628453,
+          0.60290074,
+          0.5999176
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "如何修習禪定？",
+        "category": "practice",
+        "description": "Test retrieval of meditation practice",
+        "expected_keywords": [
+          "禪定",
+          "坐禪",
+          "修行",
+          "調身",
+          "調息",
+          "調心"
+        ],
+        "expected_topics": [
+          "禪定",
+          "修行方法",
+          "坐禪"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.7230563163757324,
+        "top_k_results": 5,
+        "found_keywords": [
+          "禪定",
+          "修行",
+          "調身",
+          "調息",
+          "調心"
+        ],
+        "found_topics": [
+          "禪定"
+        ],
+        "relevance_scores": [
+          0.73231053,
+          0.72019637,
+          0.688398,
+          0.6767334,
+          0.6653784
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "念佛的方法",
+        "category": "practice",
+        "description": "Test retrieval of Buddhist chanting methods",
+        "expected_keywords": [
+          "念佛",
+          "持名",
+          "觀想",
+          "淨土"
+        ],
+        "expected_topics": [
+          "念佛",
+          "淨土法門",
+          "修行"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.8379263877868652,
+        "top_k_results": 5,
+        "found_keywords": [
+          "念佛",
+          "持名"
+        ],
+        "found_topics": [
+          "念佛"
+        ],
+        "relevance_scores": [
+          0.6284738,
+          0.62035716,
+          0.59485805,
+          0.59150434,
+          0.5874311
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "如何培養菩提心？",
+        "category": "practice",
+        "description": "Test retrieval of Bodhicitta cultivation",
+        "expected_keywords": [
+          "菩提心",
+          "慈悲",
+          "智慧",
+          "發心"
+        ],
+        "expected_topics": [
+          "菩提心",
+          "菩薩道",
+          "修行"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.46002745628356934,
+        "top_k_results": 5,
+        "found_keywords": [
+          "菩提心",
+          "慈悲",
+          "智慧",
+          "發心"
+        ],
+        "found_topics": [
+          "菩提心",
+          "修行"
+        ],
+        "relevance_scores": [
+          0.6461028,
+          0.6329124,
+          0.62433875,
+          0.60421044,
+          0.60145724
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "五戒的內容",
+        "category": "ethics",
+        "description": "Test retrieval of Five Precepts",
+        "expected_keywords": [
+          "五戒",
+          "不殺生",
+          "不偷盜",
+          "不邪淫",
+          "不妄語",
+          "不飲酒"
+        ],
+        "expected_topics": [
+          "五戒",
+          "戒律",
+          "在家居士"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.47597622871398926,
+        "top_k_results": 5,
+        "found_keywords": [
+          "五戒",
+          "不殺生",
+          "不邪淫",
+          "不妄語",
+          "不飲酒",
+          "不偷盜"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.7068633,
+          0.66049427,
+          0.6558133,
+          0.6430743,
+          0.6121316
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "什麼是六度？",
+        "category": "ethics",
+        "description": "Test retrieval of Six Perfections",
+        "expected_keywords": [
+          "六度",
+          "布施",
+          "持戒",
+          "忍辱",
+          "精進",
+          "禪定",
+          "智慧"
+        ],
+        "expected_topics": [
+          "六度",
+          "菩薩道",
+          "波羅蜜"
+        ],
+        "min_relevance_score": 0.6
+      },
+      "result": {
+        "passed": false,
+        "retrieval_time": 0.4508357048034668,
+        "top_k_results": 5,
+        "found_keywords": [
+          "六度",
+          "布施",
+          "持戒",
+          "忍辱",
+          "精進",
+          "禪定",
+          "智慧"
+        ],
+        "found_topics": [
+          "六度",
+          "波羅蜜"
+        ],
+        "relevance_scores": [
+          0.58548534,
+          0.55055255,
+          0.54810286,
+          0.5366934,
+          0.5319569
+        ],
+        "failure_reason": "Low relevance score: 0.551 < 0.6"
+      }
+    },
+    {
+      "test_case": {
+        "query": "什麼是因果？",
+        "category": "cosmology",
+        "description": "Test retrieval of karma and causation",
+        "expected_keywords": [
+          "因果",
+          "業",
+          "輪迴",
+          "報應"
+        ],
+        "expected_topics": [
+          "因果",
+          "業力",
+          "三世因果"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.4542207717895508,
+        "top_k_results": 5,
+        "found_keywords": [
+          "因果",
+          "業"
+        ],
+        "found_topics": [
+          "因果"
+        ],
+        "relevance_scores": [
+          0.64167035,
+          0.6380969,
+          0.6263386,
+          0.6252511,
+          0.6248549
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "佛教對生死的看法",
+        "category": "cosmology",
+        "description": "Test retrieval of life and death views",
+        "expected_keywords": [
+          "生死",
+          "輪迴",
+          "解脫",
+          "涅槃"
+        ],
+        "expected_topics": [
+          "生死",
+          "輪迴",
+          "解脫道"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": false,
+        "retrieval_time": 0.45575594902038574,
+        "top_k_results": 5,
+        "found_keywords": [
+          "生死"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.6898538,
+          0.6730017,
+          0.66126955,
+          0.6486007,
+          0.6432637
+        ],
+        "failure_reason": "Low coverage: keywords 25.0%, topics 0.0%"
+      }
+    },
+    {
+      "test_case": {
+        "query": "極樂世界在哪裡？",
+        "category": "pure_land",
+        "description": "Test retrieval of Pure Land",
+        "expected_keywords": [
+          "極樂世界",
+          "淨土",
+          "阿彌陀佛",
+          "西方"
+        ],
+        "expected_topics": [
+          "極樂世界",
+          "淨土",
+          "往生"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.4768853187561035,
+        "top_k_results": 5,
+        "found_keywords": [
+          "極樂世界",
+          "阿彌陀佛",
+          "西方"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.6513801,
+          0.6201303,
+          0.61650914,
+          0.6143799,
+          0.6091749
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "如何往生淨土？",
+        "category": "pure_land",
+        "description": "Test retrieval of rebirth in Pure Land",
+        "expected_keywords": [
+          "往生",
+          "念佛",
+          "信願行",
+          "淨土"
+        ],
+        "expected_topics": [
+          "往生",
+          "淨土法門",
+          "念佛"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.6749067306518555,
+        "top_k_results": 5,
+        "found_keywords": [
+          "淨土",
+          "往生",
+          "念佛",
+          "信願行"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.644115,
+          0.6432413,
+          0.62676024,
+          0.6259144,
+          0.62057984
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "觀世音菩薩的功德",
+        "category": "figures",
+        "description": "Test retrieval of Avalokitesvara",
+        "expected_keywords": [
+          "觀世音",
+          "觀音",
+          "菩薩",
+          "慈悲",
+          "救苦"
+        ],
+        "expected_topics": [
+          "觀世音菩薩",
+          "菩薩",
+          "慈悲"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.5291163921356201,
+        "top_k_results": 5,
+        "found_keywords": [
+          "觀世音",
+          "觀音",
+          "菩薩",
+          "慈悲",
+          "救苦"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.7388552,
+          0.7049247,
+          0.70324945,
+          0.68829453,
+          0.6870928
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "釋迦牟尼佛的生平",
+        "category": "figures",
+        "description": "Test retrieval of Buddha's biography",
+        "expected_keywords": [
+          "釋迦牟尼",
+          "佛陀",
+          "悉達多",
+          "成道",
+          "涅槃"
+        ],
+        "expected_topics": [
+          "佛陀",
+          "釋迦牟尼",
+          "生平"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.4547889232635498,
+        "top_k_results": 5,
+        "found_keywords": [
+          "佛陀",
+          "釋迦牟尼",
+          "悉達多"
+        ],
+        "found_topics": [
+          "佛陀",
+          "釋迦牟尼"
+        ],
+        "relevance_scores": [
+          0.6564856,
+          0.63299733,
+          0.6277115,
+          0.6273297,
+          0.62640715
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "出家的意義",
+        "category": "monastic",
+        "description": "Test retrieval of monastic ordination",
+        "expected_keywords": [
+          "出家",
+          "僧侶",
+          "修行",
+          "解脫"
+        ],
+        "expected_topics": [
+          "出家",
+          "僧團",
+          "修行"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.5984044075012207,
+        "top_k_results": 5,
+        "found_keywords": [
+          "出家",
+          "修行",
+          "解脫"
+        ],
+        "found_topics": [
+          "出家"
+        ],
+        "relevance_scores": [
+          0.7051124,
+          0.6969036,
+          0.682904,
+          0.6686807,
+          0.66379106
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "學佛對日常生活的影響",
+        "category": "daily_life",
+        "description": "Test retrieval of Buddhism in daily life",
+        "expected_keywords": [
+          "學佛",
+          "日常",
+          "生活",
+          "修行",
+          "實踐"
+        ],
+        "expected_topics": [
+          "學佛",
+          "日常生活",
+          "實踐"
+        ],
+        "min_relevance_score": 0.4
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.6197261810302734,
+        "top_k_results": 5,
+        "found_keywords": [
+          "日常",
+          "生活",
+          "修行",
+          "學佛"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.6006273,
+          0.5960678,
+          0.5915402,
+          0.57979167,
+          0.5688672
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "如何面對煩惱？",
+        "category": "daily_life",
+        "description": "Test retrieval of dealing with afflictions",
+        "expected_keywords": [
+          "煩惱",
+          "修行",
+          "智慧",
+          "對治"
+        ],
+        "expected_topics": [
+          "煩惱",
+          "修行",
+          "智慧"
+        ],
+        "min_relevance_score": 0.4
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.5670273303985596,
+        "top_k_results": 5,
+        "found_keywords": [
+          "煩惱",
+          "修行",
+          "智慧"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.6830645,
+          0.66661763,
+          0.65062714,
+          0.64913774,
+          0.64346015
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "什麼是空？",
+        "category": "philosophy",
+        "description": "Test retrieval of Emptiness",
+        "expected_keywords": [
+          "空",
+          "緣起",
+          "性空",
+          "般若"
+        ],
+        "expected_topics": [
+          "空",
+          "般若",
+          "中觀"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": false,
+        "retrieval_time": 0.5761916637420654,
+        "top_k_results": 5,
+        "found_keywords": [
+          "空"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.7137301,
+          0.70221937,
+          0.64341307,
+          0.63373625,
+          0.6273943
+        ],
+        "failure_reason": "Low coverage: keywords 25.0%, topics 0.0%"
+      }
+    },
+    {
+      "test_case": {
+        "query": "佛教的無我觀",
+        "category": "philosophy",
+        "description": "Test retrieval of Non-self doctrine",
+        "expected_keywords": [
+          "無我",
+          "我",
+          "五蘊",
+          "解脫"
+        ],
+        "expected_topics": [
+          "無我",
+          "佛教",
+          "哲理"
+        ],
+        "min_relevance_score": 0.5
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.5443038940429688,
+        "top_k_results": 5,
+        "found_keywords": [
+          "無我",
+          "我",
+          "解脫"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.75535524,
+          0.71286285,
+          0.6989271,
+          0.68977654,
+          0.68762445
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "如何開悟？",
+        "category": "advanced",
+        "description": "Test retrieval of enlightenment (challenging)",
+        "expected_keywords": [
+          "開悟",
+          "悟",
+          "證悟",
+          "智慧",
+          "修行"
+        ],
+        "expected_topics": [
+          "開悟",
+          "證悟",
+          "修行"
+        ],
+        "min_relevance_score": 0.4
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.6209466457366943,
+        "top_k_results": 5,
+        "found_keywords": [
+          "開悟",
+          "悟",
+          "智慧",
+          "修行"
+        ],
+        "found_topics": [],
+        "relevance_scores": [
+          0.7014318,
+          0.63116884,
+          0.63045615,
+          0.61923057,
+          0.60414183
+        ],
+        "failure_reason": ""
+      }
+    },
+    {
+      "test_case": {
+        "query": "佛教與科學的關係",
+        "category": "advanced",
+        "description": "Test retrieval of Buddhism and science (challenging)",
+        "expected_keywords": [
+          "佛教",
+          "科學",
+          "佛法"
+        ],
+        "expected_topics": [
+          "佛法",
+          "科學"
+        ],
+        "min_relevance_score": 0.3
+      },
+      "result": {
+        "passed": true,
+        "retrieval_time": 0.45914793014526367,
+        "top_k_results": 5,
+        "found_keywords": [
+          "佛教",
+          "科學",
+          "佛法"
+        ],
+        "found_topics": [
+          "佛法",
+          "科學"
+        ],
+        "relevance_scores": [
+          0.6434735,
+          0.57238173,
+          0.5698371,
+          0.5673069,
+          0.5645641
+        ],
+        "failure_reason": ""
+      }
+    }
+  ],
+  "timestamp": "2025-10-29T07:43:50.044975"
+}

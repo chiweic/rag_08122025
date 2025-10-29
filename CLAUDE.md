@@ -148,26 +148,44 @@ pip install -r requirements.txt
 docker run -p 6333:6333 qdrant/qdrant
 ```
 
+### First-Time Setup: Initialize Vector Database
+```bash
+# IMPORTANT: Run this BEFORE starting the server for the first time
+# This generates embeddings and populates Qdrant (takes ~15-20 minutes)
+python dashscope_init.py
+
+# The script will:
+# - Load 1,067 text chunks from chunks/text_chunks.jsonl
+# - Generate DashScope embeddings (text-embedding-v4, 1024-dim)
+# - Upload vectors to Qdrant collection 'ddm_rag'
+# - Show progress and estimated time remaining
+```
+
 ### Running the Server
 ```bash
-# Start API server (runs on 0.0.0.0:8000)
+# Start API server (auto-connects to Qdrant on startup)
 python main.py
+
+# The server will:
+# - Auto-connect to Qdrant and verify collection exists
+# - Initialize RAG pipeline and recommenders
+# - Start serving requests immediately (no /initialize needed)
 
 # Access points:
 # - Frontend: http://localhost:8000/
 # - API docs: http://localhost:8000/docs
 # - Health: http://localhost:8000/health
-```
 
-### First-Time Initialization
-```bash
-# Initialize vector store (required before queries)
-curl -X POST http://localhost:8000/initialize
-
-# Force recreate collection
-curl -X POST http://localhost:8000/initialize \
-  -H "Content-Type: application/json" \
-  -d '{"recreate_collection": true}'
+# Health endpoint now shows Qdrant collection status:
+curl http://localhost:8000/health
+# {
+#   "initialized": true,
+#   "qdrant_collection": {
+#     "name": "ddm_rag",
+#     "points_count": 1067,
+#     "status": "green"
+#   }
+# }
 ```
 
 ### Testing Endpoints

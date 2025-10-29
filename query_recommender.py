@@ -2,6 +2,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 import re
+import jieba
 
 logger = logging.getLogger(__name__)
 

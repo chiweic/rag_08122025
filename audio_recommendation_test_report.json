@@ -1,0 +1,99 @@
+{
+  "timestamp": "2025-10-29 08:01:01",
+  "total_tests": 6,
+  "successful_requests": 6,
+  "passed_tests": 6,
+  "avg_time": 0.6777688264846802,
+  "avg_similarity": 0.6278191881111111,
+  "unique_speakers": 1,
+  "speakers": [
+    "聖嚴法師"
+  ],
+  "audio_by_id_success": false,
+  "test_results": [
+    {
+      "query": "什麼是禪修？禪修是修習禪定的方法，透過觀察呼吸和身心來培養專注力。...",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.7051920890808105,
+      "avg_score": 0.65044953,
+      "min_score": 0.63994133,
+      "max_score": 0.66848373,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "四聖諦是什麼？四聖諦包括苦、集、滅、道，是佛教的核心教義。...",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.5991256237030029,
+      "avg_score": 0.6089381833333333,
+      "min_score": 0.5988177,
+      "max_score": 0.6196629,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "如何修習念佛？念佛是專注於佛號，培養正念和信心的修行方法。...",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.6748256683349609,
+      "avg_score": 0.5681459000000001,
+      "min_score": 0.5554799,
+      "max_score": 0.5819914,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "什麼是空性？空性是指一切事物沒有獨立自性，都是因緣和合而生。...",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.5228660106658936,
+      "avg_score": 0.6695186333333334,
+      "min_score": 0.64981145,
+      "max_score": 0.69647455,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "如何在日常生活中修行？日常修行包括正念覺察、慈悲心和布施等實踐。...",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.557866096496582,
+      "avg_score": 0.578054262,
+      "min_score": 0.5676441,
+      "max_score": 0.5848813,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "什麼是菩薩道？菩薩道是發菩提心，自利利他，廣度眾生的修行之道。...",
+      "success": true,
+      "count": 3,
+      "elapsed": 1.006737470626831,
+      "avg_score": 0.6918086200000001,
+      "min_score": 0.6723995,
+      "max_score": 0.71459806,
+      "speakers": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    }
+  ]
+}

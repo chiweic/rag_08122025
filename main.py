@@ -17,6 +17,6 @@ if __name__ == "__main__":
         "api:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=False,  # Disabled reload to ensure clean .env loading
+        reload=True,  # Disabled reload to ensure clean .env loading
         log_level="info"
     )

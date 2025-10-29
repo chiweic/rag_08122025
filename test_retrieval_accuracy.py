@@ -259,7 +259,7 @@ class RetrievalTester:
         try:
             response = requests.post(
                 f"{self.base_url}/retrieve",
-                json={"question": test_case.query, "top_k": top_k},
+                json={"query": test_case.query, "top_k": top_k},
                 timeout=30
             )
             response.raise_for_status()
@@ -281,7 +281,7 @@ class RetrievalTester:
             )
 
         # Extract results
-        contexts = result_data.get("contexts", [])
+        contexts = result_data.get("documents", [])
 
         if not contexts:
             print(f"❌ No results found")
@@ -302,27 +302,27 @@ class RetrievalTester:
         relevance_scores = []
 
         for i, ctx in enumerate(contexts):
-            content = ctx.get("content", "")
+            content = ctx.get("text", "")
             metadata = ctx.get("metadata", {})
-            header = metadata.get("header", "")
+            title = metadata.get("title", "")
             score = ctx.get("score", 0.0)
 
             relevance_scores.append(score)
 
             print(f"\n--- Result {i+1} (Score: {score:.4f}) ---")
-            print(f"Header: {header}")
+            print(f"Title: {title}")
             print(f"Content preview: {content[:150]}...")
 
             # Check for expected keywords
-            combined_text = (header + " " + content).lower()
+            combined_text = (title + " " + content).lower()
             for keyword in test_case.expected_keywords:
                 if keyword.lower() in combined_text and keyword not in found_keywords:
                     found_keywords.append(keyword)
                     print(f"  ✓ Found keyword: {keyword}")
 
-            # Check for expected topics (from header)
+            # Check for expected topics (from title)
             for topic in test_case.expected_topics:
-                if topic in header and topic not in found_topics:
+                if topic in title and topic not in found_topics:
                     found_topics.append(topic)
                     print(f"  ✓ Found topic: {topic}")
 

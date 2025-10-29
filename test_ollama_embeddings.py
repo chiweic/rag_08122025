@@ -43,24 +43,37 @@ class OllamaEmbeddingTest:
         """Generate embedding for a single text"""
         print(f"\nGenerating embedding for: '{text[:50]}...'")
         try:
-            # Ollama embedding API endpoint
-            url = f"{self.base_url}/api/embeddings"
-            payload = {
-                "model": self.model,
-                "prompt": text
-            }
+            # OpenAI-compatible embedding API endpoint (for DashScope/OpenAI)
+            if "dashscope" in self.base_url or "openai" in self.base_url:
+                url = f"{self.base_url}/embeddings"
+                payload = {
+                    "model": self.model,
+                    "input": text
+                }
+            else:
+                # Ollama format
+                url = f"{self.base_url}/api/embeddings"
+                payload = {
+                    "model": self.model,
+                    "prompt": text
+                }
 
             response = requests.post(
                 url,
                 headers=self.headers,
                 json=payload,
-                timeout=30
+                timeout=120  # Increased timeout for qwen3-embedding
             )
 
             print(f"Status Code: {response.status_code}")
 
             if response.status_code == 200:
                 result = response.json()
+                # Parse OpenAI-compatible format (DashScope/OpenAI)
+                if "data" in result:
+                    # OpenAI format: {"data": [{"embedding": [...]}]}
+                    return {"embedding": result["data"][0]["embedding"]}
+                # Ollama format: {"embedding": [...]}
                 return result
             else:
                 print(f"Error Response: {response.text}")
@@ -128,10 +141,10 @@ def main():
     print("Ollama Embeddings API Test")
     print("=" * 60)
 
-    # Configuration
-    BASE_URL = "http://ollama.changpt.org"
-    MODEL = "bge-m3"
-    API_KEY = "ddm_api_key"
+    # Configuration - DashScope (Alibaba Cloud)
+    BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    MODEL = "text-embedding-v3"  # DashScope embedding model
+    API_KEY = "sk-90eac46056f04ac6ba2db2cfe72e8f74"  # From .env DASHSCOPE_API_KEY
 
     print(f"\nConfiguration:")
     print(f"  Base URL: {BASE_URL}")
@@ -185,14 +198,31 @@ def main():
     successful = sum(1 for r in batch_results if "embedding" in r)
     print(f"\n✓ Successfully generated {successful}/{len(test_texts)} embeddings")
 
-    # Test 5: Semantic similarity
+    # Test 5: Semantic similarity with REAL chunk data
     print("\n" + "=" * 60)
-    print("Test 5: Semantic Similarity Test")
+    print("Test 5: Semantic Similarity Test (REAL CHUNK DATA)")
     print("=" * 60)
+
+    # Load first 3 documents from actual chunks
+    import json
+    with open("chunks/text_chunks.jsonl", "r", encoding="utf-8") as f:
+        chunks = []
+        for i, line in enumerate(f):
+            if i >= 3:
+                break
+            chunk = json.loads(line)
+            text = f"{chunk.get('header', '')}\n{chunk.get('content', '')}".strip()
+            chunks.append(text)
+
+    print(f"Using REAL documents from chunks/text_chunks.jsonl")
+    print(f"Doc 1 length: {len(chunks[0])} chars")
+    print(f"Doc 2 length: {len(chunks[1])} chars")
+    print(f"Doc 3 length: {len(chunks[2])} chars")
+
     tester.test_similarity(
-        "四聖諦是佛教的基本教義",
-        "四聖諦是佛陀教導的核心真理",  # Similar
-        "今天天氣很好"  # Different
+        chunks[0],  # First real document
+        chunks[1],  # Second real document
+        chunks[2]   # Third real document
     )
 
     # Summary

@@ -189,15 +189,33 @@ class RAGPipeline:
             sources = []
             for ctx in contexts:
                 metadata = ctx.get("metadata", {})
-                sources.append({
-                    "title": metadata.get("title", "Unknown"),
-                    "chunk_id": metadata.get("chunk_id", ""),
+                source_type = metadata.get("source_type", "text")
+
+                # Build source info based on type
+                source_info = {
                     "score": ctx.get("score", 0),
-                    "pages": f"{metadata.get('start_page', '')}-{metadata.get('end_page', '')}" 
-                            if metadata.get('start_page') else "",
+                    "source_type": source_type,
                     "category": metadata.get("category", ""),
+                    "chunk_id": metadata.get("chunk_id", ""),
                     "text": ctx.get("text", "")
-                })
+                }
+
+                # Type-specific fields
+                if source_type == "audio":
+                    source_info["title"] = metadata.get("audio_title", "Unknown Audio")
+                    source_info["speaker"] = metadata.get("speaker", "")
+                    source_info["timestamp"] = f"{metadata.get('timestamp_start', '')}-{metadata.get('timestamp_end', '')}"
+                    source_info["audio_url"] = metadata.get("audio_url", "")
+                elif source_type == "event":
+                    source_info["title"] = metadata.get("event_title", "Unknown Event")
+                    source_info["location"] = metadata.get("event_location", "")
+                    source_info["time_period"] = metadata.get("event_time_period", "")
+                else:  # text
+                    source_info["title"] = metadata.get("title", "Unknown")
+                    source_info["pages"] = f"{metadata.get('start_page', '')}-{metadata.get('end_page', '')}" if metadata.get('start_page') else ""
+                    source_info["source"] = metadata.get("source", "")
+
+                sources.append(source_info)
             response["sources"] = sources
         
         return response
@@ -224,16 +242,34 @@ class RAGPipeline:
             sources = []
             for ctx in contexts:
                 metadata = ctx.get("metadata", {})
-                sources.append({
-                    "title": metadata.get("title", "Unknown"),
-                    "chunk_id": metadata.get("chunk_id", ""),
+                source_type = metadata.get("source_type", "text")
+
+                # Build source info based on type
+                source_info = {
                     "score": ctx.get("score", 0),
-                    "pages": f"{metadata.get('start_page', '')}-{metadata.get('end_page', '')}" 
-                            if metadata.get('start_page') else "",
+                    "source_type": source_type,
                     "category": metadata.get("category", ""),
+                    "chunk_id": metadata.get("chunk_id", ""),
                     "text": ctx.get("text", "")
-                })
-            
+                }
+
+                # Type-specific fields
+                if source_type == "audio":
+                    source_info["title"] = metadata.get("audio_title", "Unknown Audio")
+                    source_info["speaker"] = metadata.get("speaker", "")
+                    source_info["timestamp"] = f"{metadata.get('timestamp_start', '')}-{metadata.get('timestamp_end', '')}"
+                    source_info["audio_url"] = metadata.get("audio_url", "")
+                elif source_type == "event":
+                    source_info["title"] = metadata.get("event_title", "Unknown Event")
+                    source_info["location"] = metadata.get("event_location", "")
+                    source_info["time_period"] = metadata.get("event_time_period", "")
+                else:  # text
+                    source_info["title"] = metadata.get("title", "Unknown")
+                    source_info["pages"] = f"{metadata.get('start_page', '')}-{metadata.get('end_page', '')}" if metadata.get('start_page') else ""
+                    source_info["source"] = metadata.get("source", "")
+
+                sources.append(source_info)
+
             yield f"data: {json.dumps({'type': 'sources', 'sources': sources, 'retrieval_time': retrieval_time})}\n\n"
         
         if not contexts:

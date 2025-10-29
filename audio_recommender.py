@@ -71,30 +71,26 @@ class AudioRecommender:
                         
                         self.audio_chunks.append(audio)
                         self.audio_chunks_by_id[audio['id']] = audio
+
+                        # Also index by audio_id + chunk_index for Qdrant matching
+                        audio_id = metadata.get('audio_id', '')
+                        chunk_index = metadata.get('chunk_index', 0)
+                        if audio_id:
+                            composite_key = f"{audio_id}_{chunk_index}"
+                            self.audio_chunks_by_id[composite_key] = audio
                     except Exception as e:
                         logger.error(f"Error parsing audio chunk: {e}")
     
     def build_search_index(self):
-        """Build semantic search index for audio chunks."""
+        """Build semantic search index for audio chunks using Qdrant."""
         if not self.audio_chunks:
             logger.warning("No audio chunks to index")
             return
-        
-        # Create searchable text for each audio chunk
-        self.audio_texts = []
-        for audio in self.audio_chunks:
-            search_text = f"{audio['audio_title']} {audio['speaker']} {audio['section']} {audio['header']} {audio['content']}"
-            self.audio_texts.append(search_text)
-        
-        # Generate embeddings for all audio chunks
-        try:
-            logger.info(f"Generating embeddings for {len(self.audio_texts)} audio chunks...")
-            self.audio_embeddings = self.embeddings.embed_documents(self.audio_texts)
-            self.audio_embeddings = np.array(self.audio_embeddings)
-            logger.info(f"Generated embeddings with shape {self.audio_embeddings.shape}")
-        except Exception as e:
-            logger.error(f"Error generating audio embeddings: {e}")
-            self.audio_embeddings = None
+
+        # Skip embedding generation - we'll use vector_store.search() directly
+        # Audio chunks are already in Qdrant with embeddings
+        logger.info(f"Audio recommender will use Qdrant vector store for {len(self.audio_chunks)} audio chunks")
+        self.audio_embeddings = None
     
     def get_audio_recommendations(self,
                                  query_and_answer: str,
@@ -114,32 +110,42 @@ class AudioRecommender:
         if not self.audio_chunks:
             return []
         
-        # If we have embeddings, use semantic search
-        if self.embeddings and self.audio_embeddings is not None:
+        # Use Qdrant vector store for semantic search
+        if self.vector_store and self.embeddings:
             try:
-                # Generate query embedding
+                # First embed the query
                 query_embedding = self.embeddings.embed_query(query_and_answer)
-                query_embedding = np.array(query_embedding)
-                
-                # Calculate similarities
-                similarities = np.dot(self.audio_embeddings, query_embedding)
-                
-                # Get top k recommendations
-                top_indices = np.argsort(similarities)[::-1][:top_k]
-                
+
+                # Search Qdrant for audio chunks (filter by source_type=audio)
+                search_results = self.vector_store.search(
+                    query_embedding=query_embedding,
+                    top_k=top_k,
+                    filter_dict={"source_type": "audio"}
+                )
+
+                # Convert to audio objects
                 recommendations = []
-                for idx in top_indices:
-                    score = similarities[idx]
-                    if score >= min_similarity:
-                        audio = self.audio_chunks[idx].copy()
-                        audio['similarity_score'] = float(score)
-                        audio['relevance'] = 'high' if score > 0.4 else 'medium' if score > 0.2 else 'low'
-                        recommendations.append(audio)
-                
+                for result in search_results:
+                    # Find the audio chunk by audio_id + chunk_index
+                    metadata = result.get('metadata', {})
+                    audio_id = metadata.get('audio_id', '')
+                    chunk_index = metadata.get('chunk_index', 0)
+                    composite_key = f"{audio_id}_{chunk_index}"
+
+                    if composite_key in self.audio_chunks_by_id:
+                        audio = self.audio_chunks_by_id[composite_key].copy()
+
+                        # Add similarity score
+                        score = result.get('score', 0)
+                        if score >= min_similarity:
+                            audio['similarity_score'] = float(score)
+                            audio['relevance'] = 'high' if score > 0.7 else 'medium' if score > 0.5 else 'low'
+                            recommendations.append(audio)
+
                 return recommendations
-                
+
             except Exception as e:
-                logger.error(f"Error in audio semantic search: {e}")
+                logger.error(f"Error in Qdrant search: {e}")
                 # Fall back to keyword search
         
         # Fallback: keyword-based search

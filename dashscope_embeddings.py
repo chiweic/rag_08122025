@@ -1,5 +1,5 @@
 """
-Custom Ollama Embeddings wrapper for LangChain
+Custom DashScope Embeddings wrapper for LangChain
 """
 
 import requests
@@ -12,24 +12,24 @@ from langchain.schema.embeddings import Embeddings
 logger = logging.getLogger(__name__)
 
 
-class OllamaEmbeddings(Embeddings):
-    """Ollama embeddings integration for LangChain."""
+class DashScopeEmbeddings(Embeddings):
+    """DashScope embeddings integration for LangChain."""
 
     def __init__(
         self,
-        base_url: str,
-        model: str,
-        api_key: str = None,
+        api_key: str,
+        model: str = "text-embedding-v4",
+        base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
         timeout: int = 60,
         max_workers: int = 10
     ):
         """
-        Initialize Ollama embeddings.
+        Initialize DashScope embeddings.
 
         Args:
-            base_url: Base URL for Ollama API (e.g., http://ollama.changpt.org)
-            model: Model name (e.g., bge-m3)
-            api_key: API key for authentication
+            api_key: DashScope API key
+            model: Model name (e.g., text-embedding-v3, text-embedding-v4)
+            base_url: Base URL for DashScope API
             timeout: Request timeout in seconds
             max_workers: Maximum concurrent workers for parallel requests
         """
@@ -40,18 +40,19 @@ class OllamaEmbeddings(Embeddings):
         self.max_workers = max_workers
 
         # Prepare headers
-        self.headers = {"Content-Type": "application/json"}
-        if api_key:
-            self.headers["Authorization"] = f"Bearer {api_key}"
+        self.headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
 
-        logger.info(f"Initialized OllamaEmbeddings: {base_url}, model={model}, max_workers={max_workers}")
+        logger.info(f"Initialized DashScopeEmbeddings: model={model}, max_workers={max_workers}")
 
     def _generate_embedding(self, text: str, max_retries: int = 3) -> List[float]:
         """Generate embedding for a single text with retry logic."""
-        url = f"{self.base_url}/api/embeddings"
+        url = f"{self.base_url}/embeddings"
         payload = {
             "model": self.model,
-            "prompt": text
+            "input": text  # DashScope expects "input" not "prompt"
         }
 
         for attempt in range(max_retries):
@@ -65,17 +66,18 @@ class OllamaEmbeddings(Embeddings):
                 response.raise_for_status()
 
                 result = response.json()
-                if "embedding" in result:
-                    return result["embedding"]
+                # DashScope returns: {"data": [{"embedding": [...]}]}
+                if "data" in result and len(result["data"]) > 0:
+                    return result["data"][0]["embedding"]
                 else:
                     raise ValueError(f"No embedding in response: {result}")
 
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 500:
+                if e.response.status_code >= 500:
                     # Server error - retry with exponential backoff
                     if attempt < max_retries - 1:
                         wait_time = 2 ** attempt  # 1s, 2s, 4s
-                        logger.warning(f"500 error on attempt {attempt+1}/{max_retries}, retrying in {wait_time}s...")
+                        logger.warning(f"{e.response.status_code} error on attempt {attempt+1}/{max_retries}, retrying in {wait_time}s...")
                         time.sleep(wait_time)
                         continue
                     else:
@@ -83,7 +85,7 @@ class OllamaEmbeddings(Embeddings):
                         raise
                 else:
                     # Other HTTP errors - don't retry
-                    logger.error(f"HTTP error {e.response.status_code}: {e}")
+                    logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
                     raise
             except Exception as e:
                 logger.error(f"Failed to generate embedding: {e}")

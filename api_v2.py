@@ -355,7 +355,7 @@ async def retrieve_chunks(request: RetrievalRequest):
             
             chunk_data = {
                 "type": collection_type,
-                "content": source.get("content", ""),
+                "content": source.get("text", ""),
                 "score": source.get("score", 0.0)
             }
             

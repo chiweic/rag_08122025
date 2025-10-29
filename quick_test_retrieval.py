@@ -31,7 +31,7 @@ def test_query(query: str, description: str, top_k: int = 3):
     try:
         response = requests.post(
             f"{BASE_URL}/retrieve",
-            json={"question": query, "top_k": top_k},
+            json={"query": query, "top_k": top_k},
             timeout=30
         )
         response.raise_for_status()
@@ -39,22 +39,24 @@ def test_query(query: str, description: str, top_k: int = 3):
 
         elapsed = time.time() - start_time
 
-        contexts = result.get("contexts", [])
+        documents = result.get("documents", [])
 
         print(f"Retrieval time: {elapsed:.3f}s")
-        print(f"Results found: {len(contexts)}")
+        print(f"Results found: {len(documents)}")
 
-        for i, ctx in enumerate(contexts[:top_k]):
-            content = ctx.get("content", "")
-            metadata = ctx.get("metadata", {})
-            header = metadata.get("header", "Unknown")
-            score = ctx.get("score", 0.0)
+        for i, doc in enumerate(documents[:top_k]):
+            #content = doc.get("content", "")
+            metadata = doc.get("metadata", {})
+            #header = metadata.get("header", "Unknown")
+            score = doc.get("score", 0.0)
+            title = metadata.get("title", "Unknown Title")
+            content = doc.get("text", "")
 
             print(f"\n--- Result {i+1} (Score: {score:.4f}) ---")
-            print(f"Title: {header}")
+            print(f"Title: {title}")
             print(f"Preview: {content[:200]}...")
 
-        return True, elapsed, len(contexts)
+        return True, elapsed, len(documents)
 
     except Exception as e:
         print(f"❌ Error: {e}")

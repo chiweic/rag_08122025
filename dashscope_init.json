@@ -1,0 +1,712 @@
+[07:51:13] ============================================================
+[07:51:13] DashScope Embedding Initialization
+[07:51:13] ============================================================
+[07:51:13] DashScope URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+[07:51:13] Model: text-embedding-v4
+[07:51:13] Dimension: 1024
+[07:51:13] Batch size: 10
+[07:51:13] 
+[07:51:13] Loading documents from chunks/text_chunks.jsonl...
+[07:51:13] ✅ Loaded 1067 documents
+[07:51:13] Initializing Qdrant collection...
+[07:51:13] 🗑️  Deleted existing collection: ddm_rag
+[07:51:14] ✅ Created collection: ddm_rag (dim=1024)
+[07:51:14] 
+[07:51:14] 📦 Batch 1/107 (10 docs, indices 0-9)
+[07:51:19]    ✓ Embedded 5/10 documents in batch
+[07:51:23]    ✓ Embedded 10/10 documents in batch
+[07:51:23] ✅ Batch 1/107 complete (9.2s)
+[07:51:23] ⏱️  Estimated time remaining: 17.1 minutes
+[07:51:23] 
+[07:51:23] 📦 Batch 2/107 (10 docs, indices 10-19)
+[07:51:27]    ✓ Embedded 5/10 documents in batch
+[07:51:34]    ✓ Embedded 10/10 documents in batch
+[07:51:34] ✅ Batch 2/107 complete (10.8s)
+[07:51:34] ⏱️  Estimated time remaining: 17.9 minutes
+[07:51:34] 
+[07:51:34] 📦 Batch 3/107 (10 docs, indices 20-29)
+[07:51:37]    ✓ Embedded 5/10 documents in batch
+[07:51:41]    ✓ Embedded 10/10 documents in batch
+[07:51:41] ✅ Batch 3/107 complete (7.3s)
+[07:51:41] ⏱️  Estimated time remaining: 16.1 minutes
+[07:51:41] 
+[07:51:41] 📦 Batch 4/107 (10 docs, indices 30-39)
+[07:51:45]    ✓ Embedded 5/10 documents in batch
+[07:51:50]    ✓ Embedded 10/10 documents in batch
+[07:51:50] ✅ Batch 4/107 complete (9.3s)
+[07:51:50] ⏱️  Estimated time remaining: 15.9 minutes
+[07:51:50] 
+[07:51:50] 📦 Batch 5/107 (10 docs, indices 40-49)
+[07:51:54]    ✓ Embedded 5/10 documents in batch
+[07:51:57]    ✓ Embedded 10/10 documents in batch
+[07:51:57] ✅ Batch 5/107 complete (7.1s)
+[07:51:57] 💾 Uploading 50 points to Qdrant...
+[07:51:57] ✅ Uploaded 50 points to Qdrant
+[07:51:57] ⏱️  Estimated time remaining: 15.0 minutes
+[07:51:57] 
+[07:51:57] 📦 Batch 6/107 (10 docs, indices 50-59)
+[07:52:02]    ✓ Embedded 5/10 documents in batch
+[07:52:06]    ✓ Embedded 10/10 documents in batch
+[07:52:06] ✅ Batch 6/107 complete (8.1s)
+[07:52:06] ⏱️  Estimated time remaining: 14.7 minutes
+[07:52:06] 
+[07:52:06] 📦 Batch 7/107 (10 docs, indices 60-69)
+[07:52:11]    ✓ Embedded 5/10 documents in batch
+[07:52:15]    ✓ Embedded 10/10 documents in batch
+[07:52:15] ✅ Batch 7/107 complete (9.9s)
+[07:52:15] ⏱️  Estimated time remaining: 14.8 minutes
+[07:52:15] 
+[07:52:15] 📦 Batch 8/107 (10 docs, indices 70-79)
+[07:52:20]    ✓ Embedded 5/10 documents in batch
+[07:52:24]    ✓ Embedded 10/10 documents in batch
+[07:52:24] ✅ Batch 8/107 complete (8.4s)
+[07:52:24] ⏱️  Estimated time remaining: 14.6 minutes
+[07:52:24] 
+[07:52:24] 📦 Batch 9/107 (10 docs, indices 80-89)
+[07:52:28]    ✓ Embedded 5/10 documents in batch
+[07:52:32]    ✓ Embedded 10/10 documents in batch
+[07:52:32] ✅ Batch 9/107 complete (8.7s)
+[07:52:32] ⏱️  Estimated time remaining: 14.4 minutes
+[07:52:32] 
+[07:52:32] 📦 Batch 10/107 (10 docs, indices 90-99)
+[07:52:36]    ✓ Embedded 5/10 documents in batch
+[07:52:41]    ✓ Embedded 10/10 documents in batch
+[07:52:41] ✅ Batch 10/107 complete (8.3s)
+[07:52:41] 💾 Uploading 50 points to Qdrant...
+[07:52:41] ✅ Uploaded 50 points to Qdrant
+[07:52:41] ⏱️  Estimated time remaining: 14.2 minutes
+[07:52:41] 
+[07:52:41] 📦 Batch 11/107 (10 docs, indices 100-109)
+[07:52:44]    ✓ Embedded 5/10 documents in batch
+[07:52:46]    ✓ Embedded 10/10 documents in batch
+[07:52:46] ✅ Batch 11/107 complete (5.6s)
+[07:52:46] ⏱️  Estimated time remaining: 13.6 minutes
+[07:52:46] 
+[07:52:46] 📦 Batch 12/107 (10 docs, indices 110-119)
+[07:52:52]    ✓ Embedded 5/10 documents in batch
+[07:52:56]    ✓ Embedded 10/10 documents in batch
+[07:52:56] ✅ Batch 12/107 complete (9.5s)
+[07:52:56] ⏱️  Estimated time remaining: 13.6 minutes
+[07:52:56] 
+[07:52:56] 📦 Batch 13/107 (10 docs, indices 120-129)
+[07:52:59]    ✓ Embedded 5/10 documents in batch
+[07:53:04]    ✓ Embedded 10/10 documents in batch
+[07:53:04] ✅ Batch 13/107 complete (7.8s)
+[07:53:04] ⏱️  Estimated time remaining: 13.3 minutes
+[07:53:04] 
+[07:53:04] 📦 Batch 14/107 (10 docs, indices 130-139)
+[07:53:09]    ✓ Embedded 5/10 documents in batch
+[07:53:13]    ✓ Embedded 10/10 documents in batch
+[07:53:13] ✅ Batch 14/107 complete (8.9s)
+[07:53:13] ⏱️  Estimated time remaining: 13.2 minutes
+[07:53:13] 
+[07:53:13] 📦 Batch 15/107 (10 docs, indices 140-149)
+[07:53:17]    ✓ Embedded 5/10 documents in batch
+[07:53:20]    ✓ Embedded 10/10 documents in batch
+[07:53:20] ✅ Batch 15/107 complete (7.0s)
+[07:53:20] 💾 Uploading 50 points to Qdrant...
+[07:53:20] ✅ Uploaded 50 points to Qdrant
+[07:53:20] ⏱️  Estimated time remaining: 12.9 minutes
+[07:53:20] 
+[07:53:20] 📦 Batch 16/107 (10 docs, indices 150-159)
+[07:53:24]    ✓ Embedded 5/10 documents in batch
+[07:53:27]    ✓ Embedded 10/10 documents in batch
+[07:53:27] ✅ Batch 16/107 complete (7.0s)
+[07:53:27] ⏱️  Estimated time remaining: 12.7 minutes
+[07:53:27] 
+[07:53:27] 📦 Batch 17/107 (10 docs, indices 160-169)
+[07:53:30]    ✓ Embedded 5/10 documents in batch
+[07:53:33]    ✓ Embedded 10/10 documents in batch
+[07:53:33] ✅ Batch 17/107 complete (6.7s)
+[07:53:33] ⏱️  Estimated time remaining: 12.4 minutes
+[07:53:33] 
+[07:53:33] 📦 Batch 18/107 (10 docs, indices 170-179)
+[07:53:39]    ✓ Embedded 5/10 documents in batch
+[07:53:42]    ✓ Embedded 10/10 documents in batch
+[07:53:42] ✅ Batch 18/107 complete (8.7s)
+[07:53:42] ⏱️  Estimated time remaining: 12.3 minutes
+[07:53:42] 
+[07:53:42] 📦 Batch 19/107 (10 docs, indices 180-189)
+[07:53:46]    ✓ Embedded 5/10 documents in batch
+[07:53:49]    ✓ Embedded 10/10 documents in batch
+[07:53:49] ✅ Batch 19/107 complete (6.7s)
+[07:53:49] ⏱️  Estimated time remaining: 12.0 minutes
+[07:53:49] 
+[07:53:49] 📦 Batch 20/107 (10 docs, indices 190-199)
+[07:53:53]    ✓ Embedded 5/10 documents in batch
+[07:53:56]    ✓ Embedded 10/10 documents in batch
+[07:53:56] ✅ Batch 20/107 complete (7.3s)
+[07:53:56] 💾 Uploading 50 points to Qdrant...
+[07:53:56] ✅ Uploaded 50 points to Qdrant
+[07:53:56] ⏱️  Estimated time remaining: 11.8 minutes
+[07:53:56] 
+[07:53:56] 📦 Batch 21/107 (10 docs, indices 200-209)
+[07:54:00]    ✓ Embedded 5/10 documents in batch
+[07:54:04]    ✓ Embedded 10/10 documents in batch
+[07:54:04] ✅ Batch 21/107 complete (7.9s)
+[07:54:04] ⏱️  Estimated time remaining: 11.7 minutes
+[07:54:04] 
+[07:54:04] 📦 Batch 22/107 (10 docs, indices 210-219)
+[07:54:08]    ✓ Embedded 5/10 documents in batch
+[07:54:11]    ✓ Embedded 10/10 documents in batch
+[07:54:11] ✅ Batch 22/107 complete (7.2s)
+[07:54:11] ⏱️  Estimated time remaining: 11.5 minutes
+[07:54:11] 
+[07:54:11] 📦 Batch 23/107 (10 docs, indices 220-229)
+[07:54:15]    ✓ Embedded 5/10 documents in batch
+[07:54:19]    ✓ Embedded 10/10 documents in batch
+[07:54:19] ✅ Batch 23/107 complete (8.0s)
+[07:54:19] ⏱️  Estimated time remaining: 11.3 minutes
+[07:54:19] 
+[07:54:19] 📦 Batch 24/107 (10 docs, indices 230-239)
+[07:54:24]    ✓ Embedded 5/10 documents in batch
+[07:54:27]    ✓ Embedded 10/10 documents in batch
+[07:54:27] ✅ Batch 24/107 complete (7.6s)
+[07:54:27] ⏱️  Estimated time remaining: 11.2 minutes
+[07:54:27] 
+[07:54:27] 📦 Batch 25/107 (10 docs, indices 240-249)
+[07:54:30]    ✓ Embedded 5/10 documents in batch
+[07:54:34]    ✓ Embedded 10/10 documents in batch
+[07:54:34] ✅ Batch 25/107 complete (6.8s)
+[07:54:34] 💾 Uploading 50 points to Qdrant...
+[07:54:34] ✅ Uploaded 50 points to Qdrant
+[07:54:34] ⏱️  Estimated time remaining: 11.0 minutes
+[07:54:34] 
+[07:54:34] 📦 Batch 26/107 (10 docs, indices 250-259)
+[07:54:38]    ✓ Embedded 5/10 documents in batch
+[07:54:41]    ✓ Embedded 10/10 documents in batch
+[07:54:41] ✅ Batch 26/107 complete (7.4s)
+[07:54:41] ⏱️  Estimated time remaining: 10.8 minutes
+[07:54:41] 
+[07:54:41] 📦 Batch 27/107 (10 docs, indices 260-269)
+[07:54:45]    ✓ Embedded 5/10 documents in batch
+[07:54:50]    ✓ Embedded 10/10 documents in batch
+[07:54:50] ✅ Batch 27/107 complete (8.6s)
+[07:54:50] ⏱️  Estimated time remaining: 10.7 minutes
+[07:54:50] 
+[07:54:50] 📦 Batch 28/107 (10 docs, indices 270-279)
+[07:54:56]    ✓ Embedded 5/10 documents in batch
+[07:55:00]    ✓ Embedded 10/10 documents in batch
+[07:55:00] ✅ Batch 28/107 complete (10.2s)
+[07:55:00] ⏱️  Estimated time remaining: 10.7 minutes
+[07:55:00] 
+[07:55:00] 📦 Batch 29/107 (10 docs, indices 280-289)
+[07:55:03]    ✓ Embedded 5/10 documents in batch
+[07:55:08]    ✓ Embedded 10/10 documents in batch
+[07:55:08] ✅ Batch 29/107 complete (8.0s)
+[07:55:08] ⏱️  Estimated time remaining: 10.5 minutes
+[07:55:08] 
+[07:55:08] 📦 Batch 30/107 (10 docs, indices 290-299)
+[07:55:12]    ✓ Embedded 5/10 documents in batch
+[07:55:16]    ✓ Embedded 10/10 documents in batch
+[07:55:16] ✅ Batch 30/107 complete (7.8s)
+[07:55:16] 💾 Uploading 50 points to Qdrant...
+[07:55:16] ✅ Uploaded 50 points to Qdrant
+[07:55:16] ⏱️  Estimated time remaining: 10.4 minutes
+[07:55:16] 
+[07:55:16] 📦 Batch 31/107 (10 docs, indices 300-309)
+[07:55:20]    ✓ Embedded 5/10 documents in batch
+[07:55:23]    ✓ Embedded 10/10 documents in batch
+[07:55:23] ✅ Batch 31/107 complete (7.6s)
+[07:55:23] ⏱️  Estimated time remaining: 10.2 minutes
+[07:55:23] 
+[07:55:23] 📦 Batch 32/107 (10 docs, indices 310-319)
+[07:55:28]    ✓ Embedded 5/10 documents in batch
+[07:55:32]    ✓ Embedded 10/10 documents in batch
+[07:55:32] ✅ Batch 32/107 complete (8.7s)
+[07:55:32] ⏱️  Estimated time remaining: 10.1 minutes
+[07:55:32] 
+[07:55:32] 📦 Batch 33/107 (10 docs, indices 320-329)
+[07:55:35]    ✓ Embedded 5/10 documents in batch
+[07:55:40]    ✓ Embedded 10/10 documents in batch
+[07:55:40] ✅ Batch 33/107 complete (8.3s)
+[07:55:40] ⏱️  Estimated time remaining: 10.0 minutes
+[07:55:40] 
+[07:55:40] 📦 Batch 34/107 (10 docs, indices 330-339)
+[07:55:44]    ✓ Embedded 5/10 documents in batch
+[07:55:48]    ✓ Embedded 10/10 documents in batch
+[07:55:48] ✅ Batch 34/107 complete (7.9s)
+[07:55:48] ⏱️  Estimated time remaining: 9.8 minutes
+[07:55:48] 
+[07:55:48] 📦 Batch 35/107 (10 docs, indices 340-349)
+[07:55:53]    ✓ Embedded 5/10 documents in batch
+[07:55:58]    ✓ Embedded 10/10 documents in batch
+[07:55:58] ✅ Batch 35/107 complete (9.8s)
+[07:55:58] 💾 Uploading 50 points to Qdrant...
+[07:55:58] ✅ Uploaded 50 points to Qdrant
+[07:55:58] ⏱️  Estimated time remaining: 9.8 minutes
+[07:55:58] 
+[07:55:58] 📦 Batch 36/107 (10 docs, indices 350-359)
+[07:56:02]    ✓ Embedded 5/10 documents in batch
+[07:56:07]    ✓ Embedded 10/10 documents in batch
+[07:56:07] ✅ Batch 36/107 complete (8.6s)
+[07:56:07] ⏱️  Estimated time remaining: 9.6 minutes
+[07:56:07] 
+[07:56:07] 📦 Batch 37/107 (10 docs, indices 360-369)
+[07:56:11]    ✓ Embedded 5/10 documents in batch
+[07:56:15]    ✓ Embedded 10/10 documents in batch
+[07:56:15] ✅ Batch 37/107 complete (8.1s)
+[07:56:15] ⏱️  Estimated time remaining: 9.5 minutes
+[07:56:15] 
+[07:56:15] 📦 Batch 38/107 (10 docs, indices 370-379)
+[07:56:19]    ✓ Embedded 5/10 documents in batch
+[07:56:23]    ✓ Embedded 10/10 documents in batch
+[07:56:23] ✅ Batch 38/107 complete (8.0s)
+[07:56:23] ⏱️  Estimated time remaining: 9.4 minutes
+[07:56:23] 
+[07:56:23] 📦 Batch 39/107 (10 docs, indices 380-389)
+[07:56:27]    ✓ Embedded 5/10 documents in batch
+[07:56:32]    ✓ Embedded 10/10 documents in batch
+[07:56:32] ✅ Batch 39/107 complete (9.6s)
+[07:56:32] ⏱️  Estimated time remaining: 9.3 minutes
+[07:56:32] 
+[07:56:32] 📦 Batch 40/107 (10 docs, indices 390-399)
+[07:56:37]    ✓ Embedded 5/10 documents in batch
+[07:56:40]    ✓ Embedded 10/10 documents in batch
+[07:56:40] ✅ Batch 40/107 complete (7.4s)
+[07:56:40] 💾 Uploading 50 points to Qdrant...
+[07:56:40] ✅ Uploaded 50 points to Qdrant
+[07:56:40] ⏱️  Estimated time remaining: 9.1 minutes
+[07:56:40] 
+[07:56:40] 📦 Batch 41/107 (10 docs, indices 400-409)
+[07:56:44]    ✓ Embedded 5/10 documents in batch
+[07:56:50]    ✓ Embedded 10/10 documents in batch
+[07:56:50] ✅ Batch 41/107 complete (9.9s)
+[07:56:50] ⏱️  Estimated time remaining: 9.0 minutes
+[07:56:50] 
+[07:56:50] 📦 Batch 42/107 (10 docs, indices 410-419)
+[07:56:54]    ✓ Embedded 5/10 documents in batch
+[07:56:57]    ✓ Embedded 10/10 documents in batch
+[07:56:57] ✅ Batch 42/107 complete (7.7s)
+[07:56:57] ⏱️  Estimated time remaining: 8.9 minutes
+[07:56:57] 
+[07:56:57] 📦 Batch 43/107 (10 docs, indices 420-429)
+[07:57:01]    ✓ Embedded 5/10 documents in batch
+[07:57:04]    ✓ Embedded 10/10 documents in batch
+[07:57:04] ✅ Batch 43/107 complete (6.1s)
+[07:57:04] ⏱️  Estimated time remaining: 8.7 minutes
+[07:57:04] 
+[07:57:04] 📦 Batch 44/107 (10 docs, indices 430-439)
+[07:57:07]    ✓ Embedded 5/10 documents in batch
+[07:57:11]    ✓ Embedded 10/10 documents in batch
+[07:57:11] ✅ Batch 44/107 complete (7.1s)
+[07:57:11] ⏱️  Estimated time remaining: 8.5 minutes
+[07:57:11] 
+[07:57:11] 📦 Batch 45/107 (10 docs, indices 440-449)
+[07:57:15]    ✓ Embedded 5/10 documents in batch
+[07:57:20]    ✓ Embedded 10/10 documents in batch
+[07:57:20] ✅ Batch 45/107 complete (9.3s)
+[07:57:20] 💾 Uploading 50 points to Qdrant...
+[07:57:20] ✅ Uploaded 50 points to Qdrant
+[07:57:20] ⏱️  Estimated time remaining: 8.4 minutes
+[07:57:20] 
+[07:57:20] 📦 Batch 46/107 (10 docs, indices 450-459)
+[07:57:23]    ✓ Embedded 5/10 documents in batch
+[07:57:27]    ✓ Embedded 10/10 documents in batch
+[07:57:27] ✅ Batch 46/107 complete (7.1s)
+[07:57:27] ⏱️  Estimated time remaining: 8.3 minutes
+[07:57:27] 
+[07:57:27] 📦 Batch 47/107 (10 docs, indices 460-469)
+[07:57:32]    ✓ Embedded 5/10 documents in batch
+[07:57:37]    ✓ Embedded 10/10 documents in batch
+[07:57:37] ✅ Batch 47/107 complete (9.5s)
+[07:57:37] ⏱️  Estimated time remaining: 8.2 minutes
+[07:57:37] 
+[07:57:37] 📦 Batch 48/107 (10 docs, indices 470-479)
+[07:57:41]    ✓ Embedded 5/10 documents in batch
+[07:57:45]    ✓ Embedded 10/10 documents in batch
+[07:57:45] ✅ Batch 48/107 complete (8.9s)
+[07:57:45] ⏱️  Estimated time remaining: 8.0 minutes
+[07:57:45] 
+[07:57:45] 📦 Batch 49/107 (10 docs, indices 480-489)
+[07:57:57]    ✓ Embedded 5/10 documents in batch
+[07:58:08]    ✓ Embedded 10/10 documents in batch
+[07:58:08] ✅ Batch 49/107 complete (23.1s)
+[07:58:08] ⏱️  Estimated time remaining: 8.2 minutes
+[07:58:08] 
+[07:58:08] 📦 Batch 50/107 (10 docs, indices 490-499)
+[07:58:13]    ✓ Embedded 5/10 documents in batch
+[07:58:24]    ✓ Embedded 10/10 documents in batch
+[07:58:24] ✅ Batch 50/107 complete (16.0s)
+[07:58:24] 💾 Uploading 50 points to Qdrant...
+[07:58:25] ✅ Uploaded 50 points to Qdrant
+[07:58:25] ⏱️  Estimated time remaining: 8.2 minutes
+[07:58:25] 
+[07:58:25] 📦 Batch 51/107 (10 docs, indices 500-509)
+[07:58:30]    ✓ Embedded 5/10 documents in batch
+[07:58:35]    ✓ Embedded 10/10 documents in batch
+[07:58:35] ✅ Batch 51/107 complete (10.9s)
+[07:58:35] ⏱️  Estimated time remaining: 8.1 minutes
+[07:58:35] 
+[07:58:35] 📦 Batch 52/107 (10 docs, indices 510-519)
+[07:58:41]    ✓ Embedded 5/10 documents in batch
+[07:58:44]    ✓ Embedded 10/10 documents in batch
+[07:58:44] ✅ Batch 52/107 complete (9.0s)
+[07:58:44] ⏱️  Estimated time remaining: 8.0 minutes
+[07:58:44] 
+[07:58:44] 📦 Batch 53/107 (10 docs, indices 520-529)
+[07:58:48]    ✓ Embedded 5/10 documents in batch
+[07:58:52]    ✓ Embedded 10/10 documents in batch
+[07:58:52] ✅ Batch 53/107 complete (7.9s)
+[07:58:52] ⏱️  Estimated time remaining: 7.8 minutes
+[07:58:52] 
+[07:58:52] 📦 Batch 54/107 (10 docs, indices 530-539)
+[07:58:59]    ✓ Embedded 5/10 documents in batch
+[07:59:04]    ✓ Embedded 10/10 documents in batch
+[07:59:04] ✅ Batch 54/107 complete (11.7s)
+[07:59:04] ⏱️  Estimated time remaining: 7.7 minutes
+[07:59:04] 
+[07:59:04] 📦 Batch 55/107 (10 docs, indices 540-549)
+[07:59:08]    ✓ Embedded 5/10 documents in batch
+[07:59:14]    ✓ Embedded 10/10 documents in batch
+[07:59:14] ✅ Batch 55/107 complete (10.2s)
+[07:59:14] 💾 Uploading 50 points to Qdrant...
+[07:59:14] ✅ Uploaded 50 points to Qdrant
+[07:59:14] ⏱️  Estimated time remaining: 7.6 minutes
+[07:59:14] 
+[07:59:14] 📦 Batch 56/107 (10 docs, indices 550-559)
+[07:59:17]    ✓ Embedded 5/10 documents in batch
+[07:59:21]    ✓ Embedded 10/10 documents in batch
+[07:59:21] ✅ Batch 56/107 complete (6.6s)
+[07:59:21] ⏱️  Estimated time remaining: 7.4 minutes
+[07:59:21] 
+[07:59:21] 📦 Batch 57/107 (10 docs, indices 560-569)
+[07:59:25]    ✓ Embedded 5/10 documents in batch
+[07:59:32]    ✓ Embedded 10/10 documents in batch
+[07:59:32] ✅ Batch 57/107 complete (10.8s)
+[07:59:32] ⏱️  Estimated time remaining: 7.3 minutes
+[07:59:32] 
+[07:59:32] 📦 Batch 58/107 (10 docs, indices 570-579)
+[07:59:38]    ✓ Embedded 5/10 documents in batch
+[07:59:43]    ✓ Embedded 10/10 documents in batch
+[07:59:43] ✅ Batch 58/107 complete (11.2s)
+[07:59:43] ⏱️  Estimated time remaining: 7.2 minutes
+[07:59:43] 
+[07:59:43] 📦 Batch 59/107 (10 docs, indices 580-589)
+[07:59:46]    ✓ Embedded 5/10 documents in batch
+[07:59:50]    ✓ Embedded 10/10 documents in batch
+[07:59:50] ✅ Batch 59/107 complete (6.9s)
+[07:59:50] ⏱️  Estimated time remaining: 7.0 minutes
+[07:59:50] 
+[07:59:50] 📦 Batch 60/107 (10 docs, indices 590-599)
+[07:59:56]    ✓ Embedded 5/10 documents in batch
+[07:59:59]    ✓ Embedded 10/10 documents in batch
+[07:59:59] ✅ Batch 60/107 complete (9.1s)
+[07:59:59] 💾 Uploading 50 points to Qdrant...
+[07:59:59] ✅ Uploaded 50 points to Qdrant
+[07:59:59] ⏱️  Estimated time remaining: 6.9 minutes
+[07:59:59] 
+[07:59:59] 📦 Batch 61/107 (10 docs, indices 600-609)
+[08:00:03]    ✓ Embedded 5/10 documents in batch
+[08:00:07]    ✓ Embedded 10/10 documents in batch
+[08:00:07] ✅ Batch 61/107 complete (7.6s)
+[08:00:07] ⏱️  Estimated time remaining: 6.7 minutes
+[08:00:07] 
+[08:00:07] 📦 Batch 62/107 (10 docs, indices 610-619)
+[08:00:10]    ✓ Embedded 5/10 documents in batch
+[08:00:13]    ✓ Embedded 10/10 documents in batch
+[08:00:13] ✅ Batch 62/107 complete (6.5s)
+[08:00:13] ⏱️  Estimated time remaining: 6.5 minutes
+[08:00:13] 
+[08:00:13] 📦 Batch 63/107 (10 docs, indices 620-629)
+[08:00:16]    ✓ Embedded 5/10 documents in batch
+[08:00:20]    ✓ Embedded 10/10 documents in batch
+[08:00:20] ✅ Batch 63/107 complete (7.3s)
+[08:00:20] ⏱️  Estimated time remaining: 6.4 minutes
+[08:00:20] 
+[08:00:20] 📦 Batch 64/107 (10 docs, indices 630-639)
+[08:00:24]    ✓ Embedded 5/10 documents in batch
+[08:00:27]    ✓ Embedded 10/10 documents in batch
+[08:00:27] ✅ Batch 64/107 complete (7.1s)
+[08:00:27] ⏱️  Estimated time remaining: 6.2 minutes
+[08:00:27] 
+[08:00:27] 📦 Batch 65/107 (10 docs, indices 640-649)
+[08:00:32]    ✓ Embedded 5/10 documents in batch
+[08:00:37]    ✓ Embedded 10/10 documents in batch
+[08:00:37] ✅ Batch 65/107 complete (9.5s)
+[08:00:37] 💾 Uploading 50 points to Qdrant...
+[08:00:37] ✅ Uploaded 50 points to Qdrant
+[08:00:37] ⏱️  Estimated time remaining: 6.1 minutes
+[08:00:37] 
+[08:00:37] 📦 Batch 66/107 (10 docs, indices 650-659)
+[08:00:41]    ✓ Embedded 5/10 documents in batch
+[08:00:45]    ✓ Embedded 10/10 documents in batch
+[08:00:45] ✅ Batch 66/107 complete (8.5s)
+[08:00:45] ⏱️  Estimated time remaining: 5.9 minutes
+[08:00:45] 
+[08:00:45] 📦 Batch 67/107 (10 docs, indices 660-669)
+[08:00:49]    ✓ Embedded 5/10 documents in batch
+[08:00:54]    ✓ Embedded 10/10 documents in batch
+[08:00:54] ✅ Batch 67/107 complete (8.4s)
+[08:00:54] ⏱️  Estimated time remaining: 5.8 minutes
+[08:00:54] 
+[08:00:54] 📦 Batch 68/107 (10 docs, indices 670-679)
+[08:00:58]    ✓ Embedded 5/10 documents in batch
+[08:01:04]    ✓ Embedded 10/10 documents in batch
+[08:01:04] ✅ Batch 68/107 complete (9.7s)
+[08:01:04] ⏱️  Estimated time remaining: 5.6 minutes
+[08:01:04] 
+[08:01:04] 📦 Batch 69/107 (10 docs, indices 680-689)
+[08:01:09]    ✓ Embedded 5/10 documents in batch
+[08:01:13]    ✓ Embedded 10/10 documents in batch
+[08:01:13] ✅ Batch 69/107 complete (9.1s)
+[08:01:13] ⏱️  Estimated time remaining: 5.5 minutes
+[08:01:13] 
+[08:01:13] 📦 Batch 70/107 (10 docs, indices 690-699)
+[08:01:17]    ✓ Embedded 5/10 documents in batch
+[08:01:22]    ✓ Embedded 10/10 documents in batch
+[08:01:22] ✅ Batch 70/107 complete (9.2s)
+[08:01:22] 💾 Uploading 50 points to Qdrant...
+[08:01:22] ✅ Uploaded 50 points to Qdrant
+[08:01:22] ⏱️  Estimated time remaining: 5.4 minutes
+[08:01:22] 
+[08:01:22] 📦 Batch 71/107 (10 docs, indices 700-709)
+[08:01:26]    ✓ Embedded 5/10 documents in batch
+[08:01:31]    ✓ Embedded 10/10 documents in batch
+[08:01:31] ✅ Batch 71/107 complete (8.8s)
+[08:01:31] ⏱️  Estimated time remaining: 5.2 minutes
+[08:01:31] 
+[08:01:31] 📦 Batch 72/107 (10 docs, indices 710-719)
+[08:01:35]    ✓ Embedded 5/10 documents in batch
+[08:01:42]    ✓ Embedded 10/10 documents in batch
+[08:01:42] ✅ Batch 72/107 complete (10.9s)
+[08:01:42] ⏱️  Estimated time remaining: 5.1 minutes
+[08:01:42] 
+[08:01:42] 📦 Batch 73/107 (10 docs, indices 720-729)
+[08:01:47]    ✓ Embedded 5/10 documents in batch
+[08:01:52]    ✓ Embedded 10/10 documents in batch
+[08:01:52] ✅ Batch 73/107 complete (10.8s)
+[08:01:52] ⏱️  Estimated time remaining: 5.0 minutes
+[08:01:52] 
+[08:01:52] 📦 Batch 74/107 (10 docs, indices 730-739)
+[08:01:57]    ✓ Embedded 5/10 documents in batch
+[08:02:01]    ✓ Embedded 10/10 documents in batch
+[08:02:01] ✅ Batch 74/107 complete (8.9s)
+[08:02:01] ⏱️  Estimated time remaining: 4.8 minutes
+[08:02:01] 
+[08:02:01] 📦 Batch 75/107 (10 docs, indices 740-749)
+[08:02:06]    ✓ Embedded 5/10 documents in batch
+[08:02:10]    ✓ Embedded 10/10 documents in batch
+[08:02:10] ✅ Batch 75/107 complete (8.8s)
+[08:02:10] 💾 Uploading 50 points to Qdrant...
+[08:02:10] ✅ Uploaded 50 points to Qdrant
+[08:02:10] ⏱️  Estimated time remaining: 4.7 minutes
+[08:02:10] 
+[08:02:10] 📦 Batch 76/107 (10 docs, indices 750-759)
+[08:02:15]    ✓ Embedded 5/10 documents in batch
+[08:02:18]    ✓ Embedded 10/10 documents in batch
+[08:02:18] ✅ Batch 76/107 complete (8.2s)
+[08:02:18] ⏱️  Estimated time remaining: 4.5 minutes
+[08:02:18] 
+[08:02:18] 📦 Batch 77/107 (10 docs, indices 760-769)
+[08:02:23]    ✓ Embedded 5/10 documents in batch
+[08:02:27]    ✓ Embedded 10/10 documents in batch
+[08:02:27] ✅ Batch 77/107 complete (8.3s)
+[08:02:27] ⏱️  Estimated time remaining: 4.4 minutes
+[08:02:27] 
+[08:02:27] 📦 Batch 78/107 (10 docs, indices 770-779)
+[08:02:32]    ✓ Embedded 5/10 documents in batch
+[08:02:36]    ✓ Embedded 10/10 documents in batch
+[08:02:36] ✅ Batch 78/107 complete (9.1s)
+[08:02:36] ⏱️  Estimated time remaining: 4.2 minutes
+[08:02:36] 
+[08:02:36] 📦 Batch 79/107 (10 docs, indices 780-789)
+[08:02:40]    ✓ Embedded 5/10 documents in batch
+[08:02:46]    ✓ Embedded 10/10 documents in batch
+[08:02:46] ✅ Batch 79/107 complete (9.9s)
+[08:02:46] ⏱️  Estimated time remaining: 4.1 minutes
+[08:02:46] 
+[08:02:46] 📦 Batch 80/107 (10 docs, indices 790-799)
+[08:02:49]    ✓ Embedded 5/10 documents in batch
+[08:02:55]    ✓ Embedded 10/10 documents in batch
+[08:02:55] ✅ Batch 80/107 complete (9.0s)
+[08:02:55] 💾 Uploading 50 points to Qdrant...
+[08:02:55] ✅ Uploaded 50 points to Qdrant
+[08:02:55] ⏱️  Estimated time remaining: 3.9 minutes
+[08:02:55] 
+[08:02:55] 📦 Batch 81/107 (10 docs, indices 800-809)
+[08:02:59]    ✓ Embedded 5/10 documents in batch
+[08:03:04]    ✓ Embedded 10/10 documents in batch
+[08:03:04] ✅ Batch 81/107 complete (9.6s)
+[08:03:04] ⏱️  Estimated time remaining: 3.8 minutes
+[08:03:04] 
+[08:03:04] 📦 Batch 82/107 (10 docs, indices 810-819)
+[08:03:09]    ✓ Embedded 5/10 documents in batch
+[08:03:13]    ✓ Embedded 10/10 documents in batch
+[08:03:13] ✅ Batch 82/107 complete (8.6s)
+[08:03:13] ⏱️  Estimated time remaining: 3.7 minutes
+[08:03:13] 
+[08:03:13] 📦 Batch 83/107 (10 docs, indices 820-829)
+[08:03:17]    ✓ Embedded 5/10 documents in batch
+[08:03:21]    ✓ Embedded 10/10 documents in batch
+[08:03:21] ✅ Batch 83/107 complete (7.7s)
+[08:03:21] ⏱️  Estimated time remaining: 3.5 minutes
+[08:03:21] 
+[08:03:21] 📦 Batch 84/107 (10 docs, indices 830-839)
+[08:03:24]    ✓ Embedded 5/10 documents in batch
+[08:03:30]    ✓ Embedded 10/10 documents in batch
+[08:03:30] ✅ Batch 84/107 complete (9.2s)
+[08:03:30] ⏱️  Estimated time remaining: 3.4 minutes
+[08:03:30] 
+[08:03:30] 📦 Batch 85/107 (10 docs, indices 840-849)
+[08:03:33]    ✓ Embedded 5/10 documents in batch
+[08:03:37]    ✓ Embedded 10/10 documents in batch
+[08:03:37] ✅ Batch 85/107 complete (7.0s)
+[08:03:37] 💾 Uploading 50 points to Qdrant...
+[08:03:37] ✅ Uploaded 50 points to Qdrant
+[08:03:37] ⏱️  Estimated time remaining: 3.2 minutes
+[08:03:37] 
+[08:03:37] 📦 Batch 86/107 (10 docs, indices 850-859)
+[08:03:41]    ✓ Embedded 5/10 documents in batch
+[08:03:45]    ✓ Embedded 10/10 documents in batch
+[08:03:45] ✅ Batch 86/107 complete (8.5s)
+[08:03:45] ⏱️  Estimated time remaining: 3.1 minutes
+[08:03:45] 
+[08:03:45] 📦 Batch 87/107 (10 docs, indices 860-869)
+[08:03:49]    ✓ Embedded 5/10 documents in batch
+[08:03:53]    ✓ Embedded 10/10 documents in batch
+[08:03:53] ✅ Batch 87/107 complete (7.1s)
+[08:03:53] ⏱️  Estimated time remaining: 2.9 minutes
+[08:03:53] 
+[08:03:53] 📦 Batch 88/107 (10 docs, indices 870-879)
+[08:03:56]    ✓ Embedded 5/10 documents in batch
+[08:04:01]    ✓ Embedded 10/10 documents in batch
+[08:04:01] ✅ Batch 88/107 complete (8.1s)
+[08:04:01] ⏱️  Estimated time remaining: 2.8 minutes
+[08:04:01] 
+[08:04:01] 📦 Batch 89/107 (10 docs, indices 880-889)
+[08:04:04]    ✓ Embedded 5/10 documents in batch
+[08:04:08]    ✓ Embedded 10/10 documents in batch
+[08:04:08] ✅ Batch 89/107 complete (7.4s)
+[08:04:08] ⏱️  Estimated time remaining: 2.6 minutes
+[08:04:08] 
+[08:04:08] 📦 Batch 90/107 (10 docs, indices 890-899)
+[08:04:13]    ✓ Embedded 5/10 documents in batch
+[08:04:17]    ✓ Embedded 10/10 documents in batch
+[08:04:17] ✅ Batch 90/107 complete (8.9s)
+[08:04:17] 💾 Uploading 50 points to Qdrant...
+[08:04:17] ✅ Uploaded 50 points to Qdrant
+[08:04:17] ⏱️  Estimated time remaining: 2.5 minutes
+[08:04:17] 
+[08:04:17] 📦 Batch 91/107 (10 docs, indices 900-909)
+[08:04:22]    ✓ Embedded 5/10 documents in batch
+[08:04:32]    ✓ Embedded 10/10 documents in batch
+[08:04:32] ✅ Batch 91/107 complete (14.5s)
+[08:04:32] ⏱️  Estimated time remaining: 2.3 minutes
+[08:04:32] 
+[08:04:32] 📦 Batch 92/107 (10 docs, indices 910-919)
+[08:04:35]    ✓ Embedded 5/10 documents in batch
+[08:04:39]    ✓ Embedded 10/10 documents in batch
+[08:04:39] ✅ Batch 92/107 complete (7.8s)
+[08:04:39] ⏱️  Estimated time remaining: 2.2 minutes
+[08:04:39] 
+[08:04:39] 📦 Batch 93/107 (10 docs, indices 920-929)
+[08:04:45]    ✓ Embedded 5/10 documents in batch
+[08:04:49]    ✓ Embedded 10/10 documents in batch
+[08:04:49] ✅ Batch 93/107 complete (9.6s)
+[08:04:49] ⏱️  Estimated time remaining: 2.0 minutes
+[08:04:49] 
+[08:04:49] 📦 Batch 94/107 (10 docs, indices 930-939)
+[08:04:52]    ✓ Embedded 5/10 documents in batch
+[08:04:57]    ✓ Embedded 10/10 documents in batch
+[08:04:57] ✅ Batch 94/107 complete (7.9s)
+[08:04:57] ⏱️  Estimated time remaining: 1.9 minutes
+[08:04:57] 
+[08:04:57] 📦 Batch 95/107 (10 docs, indices 940-949)
+[08:05:01]    ✓ Embedded 5/10 documents in batch
+[08:05:04]    ✓ Embedded 10/10 documents in batch
+[08:05:04] ✅ Batch 95/107 complete (7.5s)
+[08:05:04] 💾 Uploading 50 points to Qdrant...
+[08:05:04] ✅ Uploaded 50 points to Qdrant
+[08:05:04] ⏱️  Estimated time remaining: 1.7 minutes
+[08:05:04] 
+[08:05:04] 📦 Batch 96/107 (10 docs, indices 950-959)
+[08:05:09]    ✓ Embedded 5/10 documents in batch
+[08:05:13]    ✓ Embedded 10/10 documents in batch
+[08:05:13] ✅ Batch 96/107 complete (8.4s)
+[08:05:13] ⏱️  Estimated time remaining: 1.6 minutes
+[08:05:13] 
+[08:05:13] 📦 Batch 97/107 (10 docs, indices 960-969)
+[08:05:16]    ✓ Embedded 5/10 documents in batch
+[08:05:20]    ✓ Embedded 10/10 documents in batch
+[08:05:20] ✅ Batch 97/107 complete (7.1s)
+[08:05:20] ⏱️  Estimated time remaining: 1.5 minutes
+[08:05:20] 
+[08:05:20] 📦 Batch 98/107 (10 docs, indices 970-979)
+[08:05:23]    ✓ Embedded 5/10 documents in batch
+[08:05:29]    ✓ Embedded 10/10 documents in batch
+[08:05:29] ✅ Batch 98/107 complete (9.1s)
+[08:05:29] ⏱️  Estimated time remaining: 1.3 minutes
+[08:05:29] 
+[08:05:29] 📦 Batch 99/107 (10 docs, indices 980-989)
+[08:05:33]    ✓ Embedded 5/10 documents in batch
+[08:05:36]    ✓ Embedded 10/10 documents in batch
+[08:05:36] ✅ Batch 99/107 complete (7.4s)
+[08:05:36] ⏱️  Estimated time remaining: 1.2 minutes
+[08:05:36] 
+[08:05:36] 📦 Batch 100/107 (10 docs, indices 990-999)
+[08:05:40]    ✓ Embedded 5/10 documents in batch
+[08:05:43]    ✓ Embedded 10/10 documents in batch
+[08:05:43] ✅ Batch 100/107 complete (6.9s)
+[08:05:43] 💾 Uploading 50 points to Qdrant...
+[08:05:43] ✅ Uploaded 50 points to Qdrant
+[08:05:43] ⏱️  Estimated time remaining: 1.0 minutes
+[08:05:43] 
+[08:05:43] 📦 Batch 101/107 (10 docs, indices 1000-1009)
+[08:05:48]    ✓ Embedded 5/10 documents in batch
+[08:05:52]    ✓ Embedded 10/10 documents in batch
+[08:05:52] ✅ Batch 101/107 complete (9.0s)
+[08:05:52] ⏱️  Estimated time remaining: 0.9 minutes
+[08:05:52] 
+[08:05:52] 📦 Batch 102/107 (10 docs, indices 1010-1019)
+[08:05:57]    ✓ Embedded 5/10 documents in batch
+[08:06:02]    ✓ Embedded 10/10 documents in batch
+[08:06:02] ✅ Batch 102/107 complete (9.6s)
+[08:06:02] ⏱️  Estimated time remaining: 0.7 minutes
+[08:06:02] 
+[08:06:02] 📦 Batch 103/107 (10 docs, indices 1020-1029)
+[08:06:06]    ✓ Embedded 5/10 documents in batch
+[08:06:10]    ✓ Embedded 10/10 documents in batch
+[08:06:10] ✅ Batch 103/107 complete (7.5s)
+[08:06:10] ⏱️  Estimated time remaining: 0.6 minutes
+[08:06:10] 
+[08:06:10] 📦 Batch 104/107 (10 docs, indices 1030-1039)
+[08:06:13]    ✓ Embedded 5/10 documents in batch
+[08:06:18]    ✓ Embedded 10/10 documents in batch
+[08:06:18] ✅ Batch 104/107 complete (8.4s)
+[08:06:18] ⏱️  Estimated time remaining: 0.4 minutes
+[08:06:18] 
+[08:06:18] 📦 Batch 105/107 (10 docs, indices 1040-1049)
+[08:06:22]    ✓ Embedded 5/10 documents in batch
+[08:06:27]    ✓ Embedded 10/10 documents in batch
+[08:06:27] ✅ Batch 105/107 complete (8.7s)
+[08:06:27] 💾 Uploading 50 points to Qdrant...
+[08:06:27] ✅ Uploaded 50 points to Qdrant
+[08:06:27] ⏱️  Estimated time remaining: 0.3 minutes
+[08:06:27] 
+[08:06:27] 📦 Batch 106/107 (10 docs, indices 1050-1059)
+[08:06:31]    ✓ Embedded 5/10 documents in batch
+[08:06:34]    ✓ Embedded 10/10 documents in batch
+[08:06:34] ✅ Batch 106/107 complete (7.7s)
+[08:06:34] ⏱️  Estimated time remaining: 0.1 minutes
+[08:06:34] 
+[08:06:34] 📦 Batch 107/107 (7 docs, indices 1060-1066)
+[08:06:38]    ✓ Embedded 5/7 documents in batch
+[08:06:40]    ✓ Embedded 7/7 documents in batch
+[08:06:40] ✅ Batch 107/107 complete (5.6s)
+[08:06:40] 💾 Uploading 17 points to Qdrant...
+[08:06:40] ✅ Uploaded 17 points to Qdrant
+[08:06:40] ⏱️  Estimated time remaining: 0.0 minutes
+[08:06:40] 
+[08:06:40] ============================================================
+[08:06:40] Initialization Complete!
+[08:06:40] ============================================================
+[08:06:40] Total documents: 1067
+[08:06:40] Successfully embedded: 1067
+[08:06:40] Failed: 0
+[08:06:40] Time elapsed: 15.4 minutes (926.8 seconds)
+[08:06:40] Average time per document: 0.87s
+[08:06:40] 
+[08:06:40] Qdrant collection points: 1067
+[08:06:40] 
+[08:06:40] ✅ All done!

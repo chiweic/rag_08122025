@@ -106,26 +106,15 @@ class EventRecommender:
                 event['end_date'] = None
     
     def build_search_index(self):
-        """Build semantic search index for events."""
+        """Build semantic search index for events using Qdrant."""
         if not self.events:
             logger.warning("No events to index")
             return
-        
-        # Create searchable text for each event
-        self.event_texts = []
-        for event in self.events:
-            search_text = f"{event['title']} {event['category']} {event['location']} {event['content']}"
-            self.event_texts.append(search_text)
-        
-        # Generate embeddings for all events
-        try:
-            logger.info(f"Generating embeddings for {len(self.event_texts)} events...")
-            self.event_embeddings = self.embeddings.embed_documents(self.event_texts)
-            self.event_embeddings = np.array(self.event_embeddings)
-            logger.info(f"Generated embeddings with shape {self.event_embeddings.shape}")
-        except Exception as e:
-            logger.error(f"Error generating event embeddings: {e}")
-            self.event_embeddings = None
+
+        # Skip embedding generation - we'll use vector_store.search() directly
+        # Events are already in Qdrant with embeddings
+        logger.info(f"Event recommender will use Qdrant vector store for {len(self.events)} events")
+        self.event_embeddings = None
     
     def get_event_recommendations(self,
                                  user_query: str,
@@ -159,36 +148,47 @@ class EventRecommender:
         if not filtered_events:
             return []
         
-        # If we have embeddings, use semantic search
-        if self.embeddings and self.event_embeddings is not None:
+        # Use Qdrant vector store for semantic search
+        if self.vector_store and self.embeddings:
             try:
-                # Generate query embedding
+                # First embed the query
                 query_embedding = self.embeddings.embed_query(user_query)
-                query_embedding = np.array(query_embedding)
-                
-                # Calculate similarities
-                similarities = np.dot(self.event_embeddings, query_embedding)
-                
-                # Get indices of filtered events
-                filtered_indices = [self.events.index(e) for e in filtered_events]
-                
-                # Get scores for filtered events
-                filtered_scores = [(i, similarities[i]) for i in filtered_indices]
-                filtered_scores.sort(key=lambda x: x[1], reverse=True)
-                
-                # Get top k recommendations
+
+                # Search Qdrant for events (filter by source_type=event)
+                search_results = self.vector_store.search(
+                    query_embedding=query_embedding,
+                    top_k=top_k * 2,  # Get more results to filter
+                    filter_dict={"source_type": "event"}
+                )
+
+                # Convert to event objects and filter by date if needed
                 recommendations = []
-                for idx, score in filtered_scores[:top_k]:
-                    if score >= min_similarity:
-                        event = self.events[idx].copy()
-                        event['similarity_score'] = float(score)
-                        event['relevance'] = 'high' if score > 0.4 else 'medium' if score > 0.2 else 'low'
-                        recommendations.append(event)
-                
+                for result in search_results:
+                    # Find the event in our events list by ID
+                    metadata = result.get('metadata', {})
+                    event_id = metadata.get('event_id')
+                    if event_id and event_id in self.events_by_id:
+                        event = self.events_by_id[event_id].copy()
+
+                        # Check if upcoming only
+                        if upcoming_only:
+                            if not event.get('end_date') or event['end_date'] < date.today():
+                                continue
+
+                        # Add similarity score
+                        score = result.get('score', 0)
+                        if score >= min_similarity:
+                            event['similarity_score'] = float(score)
+                            event['relevance'] = 'high' if score > 0.7 else 'medium' if score > 0.5 else 'low'
+                            recommendations.append(event)
+
+                            if len(recommendations) >= top_k:
+                                break
+
                 return recommendations
-                
+
             except Exception as e:
-                logger.error(f"Error in semantic search: {e}")
+                logger.error(f"Error in Qdrant search: {e}")
                 # Fall back to keyword search
         
         # Fallback: keyword-based search

@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-10-29 08:07:41",
+  "total_tests": 7,
+  "successful_requests": 7,
+  "passed_tests": 7,
+  "avg_time": 0.021616663251604353,
+  "avg_similarity": 0.2765044067279218,
+  "unique_authors": 5,
+  "authors": [
+    "聖嚴法師、郎祖筠、陸弈靜、紅膠囊等",
+    "聖嚴法師",
+    "聖嚴法師、丹增諦深喇嘛",
+    "聖嚴法師／著，胡麗桂／選編",
+    "聖嚴法師主講"
+  ],
+  "book_by_isbn_success": true,
+  "random_books_success": true,
+  "test_results": [
+    {
+      "query": "禪修入門",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.03226637840270996,
+      "avg_score": 0.1794529249924815,
+      "min_score": 0.166343012579996,
+      "max_score": 0.20386817478563943,
+      "authors": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "聖嚴法師",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.022310733795166016,
+      "avg_score": 0.3254274561670988,
+      "min_score": 0.3071685286680411,
+      "max_score": 0.3349003204521177,
+      "authors": [
+        "聖嚴法師",
+        "聖嚴法師／著，胡麗桂／選編"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "佛教基本教義",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.0210113525390625,
+      "avg_score": 0.2381930607764772,
+      "min_score": 0.1562045477961073,
+      "max_score": 0.32251208118291547,
+      "authors": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "心靈成長",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.027869701385498047,
+      "avg_score": 0.1816883193463518,
+      "min_score": 0.14124718022644472,
+      "max_score": 0.2475998914768423,
+      "authors": [
+        "聖嚴法師",
+        "聖嚴法師主講"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "生活中的佛法",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.015396595001220703,
+      "avg_score": 0.19668781398059312,
+      "min_score": 0.15468064411360494,
+      "max_score": 0.23936970973725288,
+      "authors": [
+        "聖嚴法師、郎祖筠、陸弈靜、紅膠囊等",
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "念佛法門",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.017378807067871094,
+      "avg_score": 0.5773667607087223,
+      "min_score": 0.5766271057691761,
+      "max_score": 0.5785349194054081,
+      "authors": [
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "禪宗典籍",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.015083074569702148,
+      "avg_score": 0.23671451112372824,
+      "min_score": 0.2118824645779914,
+      "max_score": 0.28133977065238697,
+      "authors": [
+        "聖嚴法師、丹增諦深喇嘛",
+        "聖嚴法師"
+      ],
+      "passed": true,
+      "reasons": []
+    }
+  ]
+}

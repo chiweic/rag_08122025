@@ -1,0 +1,149 @@
+[07:01:42] ============================================================
+[07:01:42] Ollama Embedding Initialization (Foreground)
+[07:01:42] ============================================================
+[07:01:42] Ollama URL: http://ollama.changpt.org
+[07:01:42] Model: bge-m3
+[07:01:42] Dimension: 1024
+[07:01:42] Batch size: 10
+[07:01:42] 
+[07:01:42] Loading documents from chunks/text_chunks.jsonl...
+[07:01:42] ✅ Loaded 1067 documents
+[07:01:42] Initializing Qdrant collection...
+[07:01:42] 🗑️  Deleted existing collection: ddm_rag
+[07:01:42] ✅ Created collection: ddm_rag (dim=1024)
+[07:01:42] 
+[07:01:42] 📦 Batch 1/107 (10 docs, indices 0-9)
+[07:04:04]    ✓ Embedded 10/10 documents in batch
+[07:04:04] ✅ Batch 1/107 complete
+[07:04:04] 
+[07:04:04] 📦 Batch 2/107 (10 docs, indices 10-19)
+[07:07:56]    ✓ Embedded 10/10 documents in batch
+[07:07:56] ✅ Batch 2/107 complete
+[07:07:56] 
+[07:07:56] 📦 Batch 3/107 (10 docs, indices 20-29)
+[07:09:23]    ✓ Embedded 10/10 documents in batch
+[07:09:23] ✅ Batch 3/107 complete
+[07:09:23] 
+[07:09:23] 📦 Batch 4/107 (10 docs, indices 30-39)
+[07:11:49]    ✓ Embedded 10/10 documents in batch
+[07:11:49] ✅ Batch 4/107 complete
+[07:11:49] 
+[07:11:49] 📦 Batch 5/107 (10 docs, indices 40-49)
+[07:13:30]    ✓ Embedded 10/10 documents in batch
+[07:13:30] ✅ Batch 5/107 complete
+[07:13:30] 💾 Uploading 50 points to Qdrant...
+[07:13:30] ✅ Uploaded 50 points to Qdrant
+[07:13:30] 
+[07:13:30] 📦 Batch 6/107 (10 docs, indices 50-59)
+[07:15:32]    ✓ Embedded 10/10 documents in batch
+[07:15:32] ✅ Batch 6/107 complete
+[07:15:32] 
+[07:15:32] 📦 Batch 7/107 (10 docs, indices 60-69)
+[07:16:48]    ✓ Embedded 10/10 documents in batch
+[07:16:48] ✅ Batch 7/107 complete
+[07:16:48] 
+[07:16:48] 📦 Batch 8/107 (10 docs, indices 70-79)
+[07:17:27] ⚠️  500 error, retry 1/3 in 1s...
+[07:17:28] ⚠️  500 error, retry 2/3 in 2s...
+[07:17:31] ❌ Failed after 3 retries: 500 Server Error: Internal Server Error for url: http://ollama.changpt.org/api/embeddings
+[07:17:31]    ❌ Failed doc 73: 500 Server Error: Internal Server Error for url: http://ollama.changpt.org/api/embeddings
+[07:18:18]    ✓ Embedded 10/10 documents in batch
+[07:18:18] ✅ Batch 8/107 complete
+[07:18:18] 
+[07:18:18] 📦 Batch 9/107 (10 docs, indices 80-89)
+[07:19:03]    ✓ Embedded 10/10 documents in batch
+[07:19:03] ✅ Batch 9/107 complete
+[07:19:03] 
+[07:19:03] 📦 Batch 10/107 (10 docs, indices 90-99)
+[07:19:57]    ✓ Embedded 10/10 documents in batch
+[07:19:57] ✅ Batch 10/107 complete
+[07:19:57] 
+[07:19:57] 📦 Batch 11/107 (10 docs, indices 100-109)
+[07:20:16]    ✓ Embedded 10/10 documents in batch
+[07:20:16] ✅ Batch 11/107 complete
+[07:20:16] 💾 Uploading 59 points to Qdrant...
+[07:20:16] ✅ Uploaded 59 points to Qdrant
+[07:20:16] 
+[07:20:16] 📦 Batch 12/107 (10 docs, indices 110-119)
+[07:23:20]    ✓ Embedded 10/10 documents in batch
+[07:23:20] ✅ Batch 12/107 complete
+[07:23:20] 
+[07:23:20] 📦 Batch 13/107 (10 docs, indices 120-129)
+[07:24:23]    ✓ Embedded 10/10 documents in batch
+[07:24:23] ✅ Batch 13/107 complete
+[07:24:23] 
+[07:24:23] 📦 Batch 14/107 (10 docs, indices 130-139)
+[07:26:31]    ✓ Embedded 10/10 documents in batch
+[07:26:31] ✅ Batch 14/107 complete
+[07:26:31] 
+[07:26:31] 📦 Batch 15/107 (10 docs, indices 140-149)
+[07:27:38]    ✓ Embedded 10/10 documents in batch
+[07:27:38] ✅ Batch 15/107 complete
+[07:27:38] 
+[07:27:38] 📦 Batch 16/107 (10 docs, indices 150-159)
+[07:28:49]    ✓ Embedded 10/10 documents in batch
+[07:28:49] ✅ Batch 16/107 complete
+[07:28:49] 💾 Uploading 50 points to Qdrant...
+[07:28:49] ✅ Uploaded 50 points to Qdrant
+[07:28:49] 
+[07:28:49] 📦 Batch 17/107 (10 docs, indices 160-169)
+[07:30:19]    ✓ Embedded 10/10 documents in batch
+[07:30:19] ✅ Batch 17/107 complete
+[07:30:19] 
+[07:30:19] 📦 Batch 18/107 (10 docs, indices 170-179)
+[07:32:43]    ✓ Embedded 10/10 documents in batch
+[07:32:43] ✅ Batch 18/107 complete
+[07:32:43] 
+[07:32:43] 📦 Batch 19/107 (10 docs, indices 180-189)
+[07:34:03]    ✓ Embedded 10/10 documents in batch
+[07:34:03] ✅ Batch 19/107 complete
+[07:34:03] 
+[07:34:03] 📦 Batch 20/107 (10 docs, indices 190-199)
+[07:35:43]    ✓ Embedded 10/10 documents in batch
+[07:35:43] ✅ Batch 20/107 complete
+[07:35:43] 
+[07:35:43] 📦 Batch 21/107 (10 docs, indices 200-209)
+[07:37:21]    ✓ Embedded 10/10 documents in batch
+[07:37:21] ✅ Batch 21/107 complete
+[07:37:21] 💾 Uploading 50 points to Qdrant...
+[07:37:21] ✅ Uploaded 50 points to Qdrant
+[07:37:21] 
+[07:37:21] 📦 Batch 22/107 (10 docs, indices 210-219)
+[07:38:54]    ✓ Embedded 10/10 documents in batch
+[07:38:54] ✅ Batch 22/107 complete
+[07:38:54] 
+[07:38:54] 📦 Batch 23/107 (10 docs, indices 220-229)
+[07:40:39]    ✓ Embedded 10/10 documents in batch
+[07:40:39] ✅ Batch 23/107 complete
+[07:40:39] 
+[07:40:39] 📦 Batch 24/107 (10 docs, indices 230-239)
+[07:42:17]    ✓ Embedded 10/10 documents in batch
+[07:42:17] ✅ Batch 24/107 complete
+[07:42:17] 
+[07:42:17] 📦 Batch 25/107 (10 docs, indices 240-249)
+[07:43:02]    ✓ Embedded 10/10 documents in batch
+[07:43:02] ✅ Batch 25/107 complete
+[07:43:02] 
+[07:43:02] 📦 Batch 26/107 (10 docs, indices 250-259)
+[07:43:44]    ✓ Embedded 10/10 documents in batch
+[07:43:44] ✅ Batch 26/107 complete
+[07:43:44] 💾 Uploading 50 points to Qdrant...
+[07:43:44] ✅ Uploaded 50 points to Qdrant
+[07:43:44] 
+[07:43:44] 📦 Batch 27/107 (10 docs, indices 260-269)
+[07:44:08]    ✓ Embedded 10/10 documents in batch
+[07:44:08] ✅ Batch 27/107 complete
+[07:44:08] 
+[07:44:08] 📦 Batch 28/107 (10 docs, indices 270-279)
+[07:46:52]    ✓ Embedded 10/10 documents in batch
+[07:46:52] ✅ Batch 28/107 complete
+[07:46:52] 
+[07:46:52] 📦 Batch 29/107 (10 docs, indices 280-289)
+[07:48:30]    ✓ Embedded 10/10 documents in batch
+[07:48:30] ✅ Batch 29/107 complete
+[07:48:30] 
+[07:48:30] 📦 Batch 30/107 (10 docs, indices 290-299)
+[07:49:51]    ✓ Embedded 10/10 documents in batch
+[07:49:51] ✅ Batch 30/107 complete
+[07:49:51] 
+[07:49:51] 📦 Batch 31/107 (10 docs, indices 300-309)

@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-10-29 08:00:50",
+  "total_tests": 6,
+  "successful_requests": 6,
+  "passed_tests": 6,
+  "avg_time": 0.6131621996561686,
+  "avg_similarity": 0.6628372423333333,
+  "upcoming_endpoint_success": true,
+  "test_results": [
+    {
+      "query": "禪修活動",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.8517699241638184,
+      "avg_score": 0.7296682333333333,
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "念佛共修",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.4875023365020752,
+      "avg_score": 0.68282616,
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "佛學課程",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.5615153312683105,
+      "avg_score": 0.6286707366666667,
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "法會活動",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.5931451320648193,
+      "avg_score": 0.6460254133333333,
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "初學者佛教活動",
+      "success": true,
+      "count": 5,
+      "elapsed": 0.5589416027069092,
+      "avg_score": 0.619530724,
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "query": "週末禪修",
+      "success": true,
+      "count": 3,
+      "elapsed": 0.6260988712310791,
+      "avg_score": 0.6703021866666666,
+      "passed": true,
+      "reasons": []
+    }
+  ]
+}

@@ -154,8 +154,76 @@ class ChatCompletionResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    global rag_pipeline, vector_store, is_initialized, book_recommender, query_recommender, event_recommender, audio_recommender
+
     logger.info("Starting up RAG API...")
+    logger.info("Connecting to Qdrant and initializing components...")
+
+    try:
+        # Initialize vector store (connects to existing Qdrant collection)
+        vector_store = QdrantVectorStore(
+            url=settings.qdrant_url,
+            api_key=settings.qdrant_api_key,
+            collection_name=settings.qdrant_collection
+        )
+        logger.info(f"Connected to Qdrant at {settings.qdrant_url}")
+
+        # Initialize RAG pipeline
+        rag_pipeline = RAGPipeline(vector_store=vector_store)
+        logger.info("RAG pipeline initialized")
+
+        # Initialize book recommender
+        try:
+            book_recommender = BookRecommender()
+            logger.info("Book recommender initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize book recommender: {e}")
+            book_recommender = None
+
+        # Initialize query recommender
+        try:
+            query_recommender = QueryRecommender(
+                vector_store=vector_store,
+                embeddings=EmbeddingFactory.create_embeddings()
+            )
+            logger.info("Query recommender initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize query recommender: {e}")
+            query_recommender = None
+
+        # Initialize event recommender
+        try:
+            event_recommender = EventRecommender(
+                vector_store=vector_store,
+                embeddings=EmbeddingFactory.create_embeddings()
+            )
+            logger.info("Event recommender initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize event recommender: {e}")
+            event_recommender = None
+
+        # Initialize audio recommender
+        try:
+            audio_recommender = AudioRecommender(
+                vector_store=vector_store,
+                embeddings=EmbeddingFactory.create_embeddings()
+            )
+            logger.info("Audio recommender initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize audio recommender: {e}")
+            audio_recommender = None
+
+        is_initialized = True
+        logger.info("✅ Server startup complete - ready to serve requests")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize server: {e}")
+        logger.error("Please ensure Qdrant is running and the collection exists.")
+        logger.error("Run 'python dashscope_init.py' to initialize the vector database.")
+        is_initialized = False
+
     yield
+
     # Shutdown
     logger.info("Shutting down RAG API...")
 
@@ -220,142 +288,29 @@ async def list_models():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {
+    """Health check endpoint with Qdrant collection info."""
+    health_info = {
         "status": "healthy",
         "initialized": is_initialized,
         "vector_store_connected": vector_store is not None,
-        "pipeline_ready": rag_pipeline is not None
+        "pipeline_ready": rag_pipeline is not None,
+        "qdrant_collection": None
     }
 
+    # Get Qdrant collection info if connected
+    if vector_store:
+        try:
+            collection_info = vector_store.get_collection_info()
+            health_info["qdrant_collection"] = {
+                "name": collection_info.get("name"),
+                "points_count": collection_info.get("points_count"),
+                "status": collection_info.get("status")
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get Qdrant collection info: {e}")
+            health_info["qdrant_collection"] = {"error": str(e)}
 
-@app.post("/initialize")
-async def initialize_system(request: InitializeRequest = InitializeRequest()):
-    """Initialize the RAG system by loading data and creating vector store."""
-    global rag_pipeline, vector_store, is_initialized, book_recommender
-    
-    start_time = time.time()
-    
-    try:
-        # Initialize vector store
-        vector_store = QdrantVectorStore(
-            url=settings.qdrant_url,
-            api_key=settings.qdrant_api_key,
-            collection_name=settings.qdrant_collection
-        )
-        
-        # Create embeddings
-        embeddings = EmbeddingFactory.create_embeddings()
-        embedding_dim = EmbeddingFactory.get_embedding_dimension()
-        
-        # Create collection
-        vector_store.create_collection(
-            vector_size=embedding_dim,
-            recreate=request.recreate_collection
-        )
-        
-        # Check if collection already has data
-        collection_info = vector_store.get_collection_info()
-        if collection_info.get("points_count", 0) > 0 and not request.recreate_collection:
-            logger.info("Collection already contains data, skipping data loading")
-        else:
-            # Load and process chunks
-            loader = ChunkDataLoader()
-            chunks = loader.load_all_chunks()
-            
-            if not chunks:
-                raise ValueError("No chunks found in the chunks directory")
-            
-            # Prepare documents
-            documents = loader.prepare_documents_for_vectordb(chunks)
-            
-            # Generate embeddings
-            logger.info("Generating embeddings...")
-            texts = [doc['text'] for doc in documents]
-            embeddings_list = []
-
-            # Process in batches to avoid memory issues
-            batch_size = 50
-            total_batches = (len(texts) + batch_size - 1) // batch_size
-            for i in range(0, len(texts), batch_size):
-                batch_num = i // batch_size + 1
-                batch = texts[i:i + batch_size]
-                logger.info(f"Processing embedding batch {batch_num}/{total_batches} ({len(batch)} texts)...")
-                batch_embeddings = embeddings.embed_documents(batch)
-                embeddings_list.extend(batch_embeddings)
-                logger.info(f"Batch {batch_num}/{total_batches} complete")
-            
-            # Upload to vector store
-            vector_store.add_documents(
-                documents=documents,
-                embeddings=embeddings_list,
-                batch_size=request.batch_size
-            )
-        
-        # Initialize RAG pipeline
-        rag_pipeline = RAGPipeline(vector_store=vector_store)
-        
-        # Initialize book recommender
-        global book_recommender
-        try:
-            book_recommender = BookRecommender()
-            logger.info("Book recommender initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize book recommender: {e}")
-            book_recommender = None
-        
-        # Initialize query recommender
-        global query_recommender
-        try:
-            query_recommender = QueryRecommender(
-                vector_store=vector_store,
-                embeddings=EmbeddingFactory.create_embeddings()
-            )
-            logger.info("Query recommender initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize query recommender: {e}")
-            query_recommender = None
-        
-        # Initialize event recommender
-        global event_recommender
-        try:
-            event_recommender = EventRecommender(
-                vector_store=vector_store,
-                embeddings=EmbeddingFactory.create_embeddings()
-            )
-            logger.info("Event recommender initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize event recommender: {e}")
-            event_recommender = None
-        
-        # Initialize audio recommender
-        global audio_recommender
-        try:
-            audio_recommender = AudioRecommender(
-                vector_store=vector_store,
-                embeddings=EmbeddingFactory.create_embeddings()
-            )
-            logger.info("Audio recommender initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize audio recommender: {e}")
-            audio_recommender = None
-        
-        is_initialized = True
-        
-        # Get final statistics
-        final_info = vector_store.get_collection_info()
-        total_time = time.time() - start_time
-        
-        return {
-            "status": "success",
-            "message": "RAG system initialized successfully",
-            "collection_info": final_info,
-            "computation_time": total_time
-        }
-        
-    except Exception as e:
-        logger.error(f"Error initializing system: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return health_info
 
 
 @app.post("/query")
@@ -364,7 +319,7 @@ async def query_rag(request: QueryRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -400,7 +355,7 @@ async def retrieve_documents(request: RetrievalRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -427,7 +382,7 @@ async def synthesize_answer(request: SynthesisRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -453,7 +408,7 @@ async def chat_completions(request: ChatCompletionRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -534,7 +489,7 @@ async def stream_rag(request: QueryRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -608,7 +563,7 @@ async def update_configuration(request: ConfigUpdateRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -965,7 +920,7 @@ async def translate_text(request: TranslationRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -990,7 +945,7 @@ async def summarize_text(request: SummarizationRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -1074,7 +1029,7 @@ async def generate_quiz(request: QuizRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -1186,7 +1141,7 @@ async def evaluate_quiz_answers(request: QuizAnswerRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please call /initialize first."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
     
     try:
@@ -1205,7 +1160,7 @@ async def evaluate_quiz_answers(request: QuizAnswerRequest):
             )
         
         highest_chunk = last_query_cache.get("sources", [])[0]
-        chunk_content = highest_chunk.get("content", "")
+        chunk_content = highest_chunk.get("text", "")
         chunk_title = highest_chunk.get("title", "")
         
         # Create evaluation prompt
