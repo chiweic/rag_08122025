@@ -1,31 +1,579 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG Chat Interface</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Perplexity-style UI (related question fixed)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body{background:#f9fafb;color:#1f2937;overflow-y:auto;}
+    .related-btn{font-size:.8rem;line-height:1rem;color:#6b7280;text-align:left;width:100%;border-bottom:1px solid #f3f4f6;padding:2px 0;transition:all .15s ease}
+    .related-btn:hover{color:#0f766e;background:#f0fdfa}
+    .tab-btn{
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: #6b7280;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .tab-btn:hover{
+      color: #0d9488;
+    }
+    .tab-active{
+      color: #0f766e;
+      border-bottom-color: #14b8a6;
+    }
+    .tab-inactive{
+      color: #9ca3af;
+    }
+    .global-tabbar{
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      z-index:30;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom:1px solid rgba(229, 231, 235, 0.5);
+      padding: 0;
+      display:flex;
+      justify-content:center;
+      gap: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .skeleton-line{height:0.75rem;background:#e5e7eb;border-radius:4px;margin:0.25rem 0;}
+    #sourcePanel {position:fixed;top:0;right:-55%;width:50%;height:100%;background:white;box-shadow:-3px 0 8px rgba(0,0,0,0.1);transition:right 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
+    #sourcePanel.active { right: 0; }
+    #summaryPanel {position:fixed;top:0;left:-55%;width:50%;height:100%;background:white;box-shadow:3px 0 8px rgba(0,0,0,0.1);transition:left 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
+    #summaryPanel.active { left: 0; }
+    .summary-skeleton { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .source-card {border:1px solid #e5e7eb;border-radius:.5rem;padding:1rem;background:#f9fafb;transition:transform .2s ease;}
+    .source-card:hover { transform:translateY(-2px); background:white; }
+    .source-meta { font-size:.75rem; color:#6b7280; margin-bottom:.25rem; }
+    .source-title { font-size:.85rem; color:#374151; font-weight:500; margin-bottom:.25rem; }
+    .source-desc { font-size:.8rem; color:#4b5563; }
+    #summaryView { display:none; }
+    #recommendationView { display:none; }
+    .recommendation-card { transition: all 0.2s ease; }
+    .recommendation-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .rec-subtab { padding: 0.5rem 1.5rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; border: 1px solid #e5e7eb; background: white; }
+    .rec-subtab.active { background: #14b8a6; color: white; border-color: #14b8a6; }
+    .rec-subtab:not(.active):hover { background: #f0fdfa; border-color: #14b8a6; color: #14b8a6; }
+    .carousel-container { position: relative; overflow: hidden; }
+    .carousel-track { display: flex; transition: transform 0.5s ease-in-out; }
+    .carousel-item { min-width: 100%; flex-shrink: 0; }
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e5e7eb; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .carousel-btn:hover { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-50%) scale(1.1); }
+    .carousel-btn.prev { left: -20px; }
+    .carousel-btn.next { right: -20px; }
+    .carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+    .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; cursor: pointer; transition: all 0.2s; }
+    .carousel-dot.active { background: #14b8a6; width: 24px; border-radius: 4px; }
+  </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>RAG Chat</h1>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <div class="message bot-message">
-                <div class="message-content">
-                    Hello! I'm your RAG assistant. Ask me anything!
-                </div>
-            </div>
-        </div>
-        <div class="shortcut-buttons">
-            <button class="shortcut-button" data-question="禪修方法">禪修方法</button>
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="user-input" placeholder="Type your question here..." />
-            <button id="send-button">Send</button>
-        </div>
+  <div class="global-tabbar">
+    <span class="tab-btn tab-active" data-tab='answer'>問答</span>
+    <span class="tab-btn tab-inactive" data-tab='recommendation'>推薦</span>
+  </div>
+
+  <div id="summaryPanel">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-teal-700 flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5"></i>答案摘要</h2>
+      <button id="closeSummary" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
-    <script src="script.js"></script>
+    <div id="summaryContent" class="space-y-4">
+      <div class="summary-skeleton">
+        <div class="skeleton-line w-full"></div>
+        <div class="skeleton-line w-5/6"></div>
+        <div class="skeleton-line w-4/6"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sourcePanel">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-teal-700 flex items-center gap-2"><i data-lucide="book-open" class="w-5 h-5"></i>13 個來源</h2>
+      <button id="closeSource" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div class="source-card">
+        <div class="source-meta">National Science and Technology Council</div>
+        <div class="source-title">克服放射性年代問題，為秦始皇時期的明確斷代建立框架</div>
+        <div class="source-desc">此文獻說明了新測年法的科學依據及歷史背景，為建立時間軸提供關鍵技術支撐。</div>
+      </div>
+      <div class="source-card">
+        <div class="source-meta">Wikimedia Foundation, Inc.</div>
+        <div class="source-title">放射性碳年代法 - 維基百科，自由的百科全書</div>
+        <div class="source-desc">詳細說明了碳-14 測年的原理、誤差與修正方法，是最常引用的百科型資料。</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-4xl mx-auto px-4 pt-16 pb-20 space-y-8" id="mainArea">
+    <section id="home" class="text-center">
+      <h1 class="text-4xl font-bold text-teal-700 mb-8">佛學入門 - AI數位義工</h1>
+      <form id="searchForm" class="max-w-2xl mx-auto flex items-center bg-white rounded-full shadow-md px-4 py-2 ring-1 ring-gray-200">
+        <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+        <input id="q" type="text" placeholder="請問任何問題。輸入 @ 以提及。" class="flex-1 px-3 py-2 outline-none" />
+        <button type="submit" class="ml-2 p-2 bg-teal-600 rounded-full text-white hover:bg-teal-700"><i data-lucide="mic" class="w-5 h-5"></i></button>
+      </form>
+      <div id="suggestions" class="mt-10 max-w-md mx-auto text-left">
+        <h3 class="text-xs font-semibold text-gray-500 mb-2 tracking-wide">大家也在問：</h3>
+        <div id="suggestionList" class="flex flex-col gap-1 pl-3 border-l border-gray-200 transition-opacity duration-700"></div>
+      </div>
+    </section>
+
+    <div id="summaryView" class="space-y-6"></div>
+    <div id="recommendationView" style="display:none;">
+      <!-- Sub-tabs for recommendations -->
+      <div class="flex justify-center gap-3 mb-6 bg-white/80 backdrop-blur-sm sticky top-14 py-3 z-20 border-b">
+        <button class="rec-subtab active" data-rectab="books">
+          <i data-lucide="book-open" class="w-4 h-4 inline mr-1"></i>佛學經典
+        </button>
+        <button class="rec-subtab" data-rectab="events">
+          <i data-lucide="calendar-heart" class="w-4 h-4 inline mr-1"></i>解行並重
+        </button>
+      </div>
+      <div id="booksView" class="space-y-6"></div>
+      <div id="eventsView" class="space-y-6" style="display:none;"></div>
+    </div>
+
+    <div id="composer" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 hidden">
+      <form id="composerForm" class="flex items-center bg-white rounded-full shadow-lg w-full px-4 py-2 ring-1 ring-gray-200">
+        <i data-lucide="message-circle" class="w-5 h-5 text-gray-400"></i>
+        <input id="q2" type="text" placeholder="輸入下一個問題…（/ 聚焦，Enter 送出）" class="flex-1 px-3 py-2 outline-none" />
+        <button type="submit" class="ml-2 px-3 py-1.5 bg-teal-600 rounded-full text-white hover:bg-teal-700">送出</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const form=document.getElementById('searchForm');
+    const q=document.getElementById('q');
+    const home=document.getElementById('home');
+    const composer=document.getElementById('composer');
+    const summaryView=document.getElementById('summaryView');
+    const recommendationView=document.getElementById('recommendationView');
+    const booksView=document.getElementById('booksView');
+    const eventsView=document.getElementById('eventsView');
+    const sourcePanel=document.getElementById('sourcePanel');
+    const closeSource=document.getElementById('closeSource');
+    const summaryPanel=document.getElementById('summaryPanel');
+    const closeSummary=document.getElementById('closeSummary');
+    const summaryContent=document.getElementById('summaryContent');
+    const suggestionList=document.getElementById('suggestionList');
+    const composerForm=document.getElementById('composerForm');
+    const q2=document.getElementById('q2');
+
+    // Tab switching
+    const tabs=document.querySelectorAll('.tab-btn');
+    function switchTab(tab){
+      tabs.forEach(t=>{
+        t.classList.remove('tab-active','tab-inactive');
+        t.classList.add(t.dataset.tab===tab?'tab-active':'tab-inactive');
+      });
+      if(tab==='answer'){
+        summaryView.style.display='block';
+        recommendationView.style.display='none';
+      }else if(tab==='recommendation'){
+        summaryView.style.display='none';
+        recommendationView.style.display='block';
+      }
+    }
+    tabs.forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+
+    // Recommendation sub-tabs switching
+    const recSubtabs=document.querySelectorAll('.rec-subtab');
+    function switchRecTab(tab){
+      recSubtabs.forEach(t=>{
+        t.classList.toggle('active', t.dataset.rectab===tab);
+      });
+      if(tab==='books'){
+        booksView.style.display='block';
+        eventsView.style.display='none';
+      }else if(tab==='events'){
+        booksView.style.display='none';
+        eventsView.style.display='block';
+      }
+    }
+    recSubtabs.forEach(t=>t.addEventListener('click',()=>{
+      switchRecTab(t.dataset.rectab);
+      if(window.lucide){ lucide.createIcons(); }
+    }));
+
+    // Show answer view by default
+    switchTab('answer');
+
+    // Start page suggestions
+    const startQuestions=['AI 會取代人類工作嗎？','如何練習正念？','量子電腦的原理是什麼？','為什麼人會做夢？','學習第二語言的最佳方法是什麼？'];
+    function renderSuggestions(){
+      suggestionList.innerHTML='';
+      startQuestions.forEach(qText=>{
+        const btn=document.createElement('button');
+        btn.type='button';
+        btn.className='related-btn';
+        btn.textContent=qText;
+        btn.onclick=()=>handleQuery(qText);
+        suggestionList.appendChild(btn);
+      });
+    }
+    renderSuggestions();
+
+    // Toolbar
+    function createToolbar(){
+      return `<div class='toolbar flex items-center justify-between text-gray-500 text-xs mt-4 border-t pt-2'>
+        <div class='flex items-center gap-3'>
+          <button class='hover:text-teal-700'><i data-lucide="corner-up-left" class="w-4 h-4"></i></button>
+          <button class='hover:text-teal-700'><i data-lucide="refresh-ccw" class="w-4 h-4"></i></button>
+          <button class='flex items-center gap-1 hover:text-teal-700' data-summary-btn><i data-lucide="file-text" class="w-4 h-4"></i><span class="text-[11px] text-gray-500">摘要</span></button>
+          <button class='flex items-center gap-1 hover:text-teal-700' data-sources-btn><i data-lucide="globe" class="w-4 h-4"></i><span class="text-[11px] text-gray-500">13 來源</span></button>
+        </div>
+        <div class='flex items-center gap-3'>
+          <button class='hover:text-teal-700'><i data-lucide="thumbs-up" class="w-4 h-4"></i></button>
+          <button class='hover:text-teal-700'><i data-lucide="thumbs-down" class="w-4 h-4"></i></button>
+          <button class='hover:text-teal-700'><i data-lucide="copy" class="w-4 h-4"></i></button>
+          <button class='hover:text-teal-700'><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+        </div>
+      </div>`;
+    }
+
+    // Generate summary (simulate API call)
+    function generateSummary(answerText){
+      // Show loading skeleton
+      summaryContent.innerHTML=`
+        <div class="summary-skeleton">
+          <div class="skeleton-line w-full"></div>
+          <div class="skeleton-line w-5/6"></div>
+          <div class="skeleton-line w-4/6"></div>
+          <div class="skeleton-line w-full"></div>
+          <div class="skeleton-line w-3/4"></div>
+        </div>`;
+
+      // Open panel
+      summaryPanel.classList.add('active');
+
+      // Simulate API delay (1-2 seconds)
+      setTimeout(()=>{
+        const summaryText=`這是一個自動生成的摘要。主要討論了${answerText.substring(0,30)}...等核心概念。\n\n關鍵重點包括：\n• 第一個重要觀點\n• 第二個關鍵內容\n• 第三個核心思想\n\n總結來說，這個回答提供了深入的見解和實用的建議。`;
+        summaryContent.innerHTML=`<div class="prose prose-sm max-w-none"><p class="text-gray-700 leading-relaxed whitespace-pre-line">${summaryText}</p></div>`;
+      }, 1500);
+    }
+
+    // Mock book data generator
+    function generateMockBooks(query){
+      const bookTitles=['禪修指南','佛教入門','心靈成長','正念練習','智慧人生'];
+      const authors=['聖嚴法師','星雲大師','證嚴法師','一行禪師','達賴喇嘛'];
+      return Array.from({length:3},(_,i)=>({
+        title:bookTitles[i%bookTitles.length]+' - '+query,
+        author:authors[i%authors.length],
+        description:`這本書深入探討了${query}的核心概念，提供了實用的修行方法和智慧指導。`,
+        isbn:`978-986-${1000+i}-${100+i}-${i}`,
+        price:`NT$ ${280+i*20}`
+      }));
+    }
+
+    // Mock event data generator
+    function generateMockEvents(query){
+      const eventTypes=['禪修營','讀書會','講座','工作坊','共修'];
+      const locations=['安和分院','中山精舍','農禪寺','法鼓山園區','德貴學苑'];
+      return Array.from({length:3},(_,i)=>({
+        title:`${query}相關 - ${eventTypes[i%eventTypes.length]}`,
+        location:locations[i%locations.length],
+        date:`2025/11/${15+i*5}`,
+        time:'14:00-17:00',
+        description:`透過${eventTypes[i%eventTypes.length]}的形式，深入學習${query}的理論與實踐。`,
+        capacity:`${20+i*10}人`,
+        instructor:i===0?'資深法師':i===1?'專業講師':'經驗豐富的帶領者'
+      }));
+    }
+
+    // Carousel class
+    class Carousel {
+      constructor(container, autoRotateInterval = 4000) {
+        this.container = container;
+        this.track = container.querySelector('.carousel-track');
+        this.items = container.querySelectorAll('.carousel-item');
+        this.prevBtn = container.querySelector('.carousel-btn.prev');
+        this.nextBtn = container.querySelector('.carousel-btn.next');
+        this.dotsContainer = container.querySelector('.carousel-dots');
+        this.currentIndex = 0;
+        this.autoRotateInterval = autoRotateInterval;
+        this.autoRotateTimer = null;
+
+        this.init();
+      }
+
+      init() {
+        // Create dots
+        this.items.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = `carousel-dot ${i === 0 ? 'active' : ''}`;
+          dot.addEventListener('click', () => this.goToSlide(i));
+          this.dotsContainer.appendChild(dot);
+        });
+
+        // Button events
+        this.prevBtn.addEventListener('click', () => this.prev());
+        this.nextBtn.addEventListener('click', () => this.next());
+
+        // Start auto-rotate
+        this.startAutoRotate();
+
+        // Pause on hover
+        this.container.addEventListener('mouseenter', () => this.stopAutoRotate());
+        this.container.addEventListener('mouseleave', () => this.startAutoRotate());
+      }
+
+      goToSlide(index) {
+        this.currentIndex = index;
+        this.track.style.transform = `translateX(-${index * 100}%)`;
+        this.updateDots();
+      }
+
+      prev() {
+        this.currentIndex = (this.currentIndex - 1 + this.items.length) % this.items.length;
+        this.goToSlide(this.currentIndex);
+      }
+
+      next() {
+        this.currentIndex = (this.currentIndex + 1) % this.items.length;
+        this.goToSlide(this.currentIndex);
+      }
+
+      updateDots() {
+        const dots = this.dotsContainer.querySelectorAll('.carousel-dot');
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentIndex);
+        });
+      }
+
+      startAutoRotate() {
+        this.stopAutoRotate();
+        this.autoRotateTimer = setInterval(() => this.next(), this.autoRotateInterval);
+      }
+
+      stopAutoRotate() {
+        if (this.autoRotateTimer) {
+          clearInterval(this.autoRotateTimer);
+          this.autoRotateTimer = null;
+        }
+      }
+    }
+
+    // Mock helpers
+    function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+    function mockParagraph(){
+      const pieces=['這是一段示意文字，用於展示最終摘要的排版效果。','內容僅為樣式測試，實際資料將由後端回傳並渲染。','段落長度與數量隨機，以呈現多頁視覺。','你可以向下滾動觀察分頁與換頁間距。','若需要更密集或更鬆散的版面，可再調整。'];
+      const s=randInt(2,4); let out='';
+      for(let i=0;i<s;i++){ out+=pieces[randInt(0,pieces.length-1)]+' '; }
+      return `<p class="leading-7 text-gray-700">${out.trim()}</p>`;
+    }
+    function mockPage(){
+      let html=`<div class="space-y-2">`; const paraCount=randInt(3,7);
+      for(let i=0;i<paraCount;i++){ html+=mockParagraph(); }
+      html+=`</div><div class="my-6 border-t border-dashed border-gray-200"></div>`; return html;
+    }
+    function fillSummary(el, query){
+      const pages=randInt(2,10);
+      let html=`<div class="prose max-w-none">`;
+      for(let p=0;p<pages;p++){ html+=mockPage(); }
+      html+=`</div>`; el.innerHTML=html;
+    }
+
+    // Create recommendation page
+    function createRecommendationPage(query){
+      // Books section with carousel
+      const bookSection=document.createElement('section');
+      bookSection.className='bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden p-6 sm:p-8';
+
+      const books=generateMockBooks(query);
+      let booksHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="book-open" class="w-5 h-5"></i>${query} - 佛學經典推薦</h2>
+        <div class="carousel-container">
+          <button class="carousel-btn prev"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <button class="carousel-btn next"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          <div class="carousel-track">`;
+
+      books.forEach(book=>{
+        booksHTML+=`
+          <div class="carousel-item">
+            <div class="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-amber-50 to-orange-50 mx-2">
+              <div class="flex justify-between items-start mb-3">
+                <h4 class="font-semibold text-gray-900 text-base">${book.title}</h4>
+                <span class="text-teal-600 font-semibold text-base">${book.price}</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                <i data-lucide="user" class="w-4 h-4"></i>
+                <span>${book.author}</span>
+              </div>
+              <p class="text-sm text-gray-700 leading-relaxed mb-4">${book.description}</p>
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-orange-200">
+                <span class="text-xs text-gray-500 flex items-center gap-1">
+                  <i data-lucide="barcode" class="w-3 h-3"></i>${book.isbn}
+                </span>
+                <button class="text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium">查看詳情</button>
+              </div>
+            </div>
+          </div>`;
+      });
+
+      booksHTML+=`</div><div class="carousel-dots"></div></div>`;
+      bookSection.innerHTML=booksHTML;
+      booksView.append(bookSection);
+
+      // Events section with carousel
+      const eventSection=document.createElement('section');
+      eventSection.className='bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden p-6 sm:p-8';
+
+      const events=generateMockEvents(query);
+      let eventsHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="calendar-heart" class="w-5 h-5"></i>${query} - 解行並重活動</h2>
+        <div class="carousel-container">
+          <button class="carousel-btn prev"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <button class="carousel-btn next"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          <div class="carousel-track">`;
+
+      events.forEach(event=>{
+        eventsHTML+=`
+          <div class="carousel-item">
+            <div class="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-cyan-50 mx-2">
+              <div class="flex justify-between items-start mb-3">
+                <h4 class="font-semibold text-gray-900 text-sm">${event.title}</h4>
+                <span class="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">線下活動</span>
+              </div>
+              <div class="space-y-1.5 text-xs text-gray-600 mb-3 bg-white/50 p-3 rounded">
+                <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500"></i><span class="font-medium">${event.location}</span></div>
+                <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-blue-500"></i>${event.date} ${event.time}</div>
+                <div class="flex items-center gap-2"><i data-lucide="users" class="w-3.5 h-3.5 text-green-500"></i>名額：${event.capacity}</div>
+                <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-3.5 h-3.5 text-purple-500"></i>${event.instructor}</div>
+              </div>
+              <p class="text-sm text-gray-700 leading-relaxed mb-3">${event.description}</p>
+              <button class="text-sm bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-2 rounded hover:shadow-lg transition-all w-full font-medium">🎯 立即報名參加</button>
+            </div>
+          </div>`;
+      });
+
+      eventsHTML+=`</div><div class="carousel-dots"></div></div>`;
+      eventSection.innerHTML=eventsHTML;
+      eventsView.append(eventSection);
+
+      if(window.lucide){ lucide.createIcons(); }
+
+      // Initialize carousels after DOM is ready
+      setTimeout(()=>{
+        const bookCarousel = bookSection.querySelector('.carousel-container');
+        const eventCarousel = eventSection.querySelector('.carousel-container');
+        if(bookCarousel) new Carousel(bookCarousel, 4000);
+        if(eventCarousel) new Carousel(eventCarousel, 4000);
+      }, 100);
+    }
+
+    // Create one result in both tabs
+    function createPage(query){
+      // SUMMARY CARD
+      const section=document.createElement('section');
+      section.className='bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden p-6 sm:p-8';
+      section.innerHTML=`
+        <h2 class='font-semibold text-lg mb-3 text-teal-700'>${query}</h2>
+        <div data-summary>
+          <div class='animate-pulse'>
+            <div class='skeleton-line w-2/3'></div>
+            <div class='skeleton-line w-5/6'></div>
+            <div class='skeleton-line w-4/6'></div>
+          </div>
+        </div>
+        ${createToolbar()}
+        <div class='mt-4 border-t pt-2 related-section'>
+          <h3 class='text-[11px] font-semibold text-gray-500 mb-1 tracking-wide'>相關問題</h3>
+          <div class='flex flex-col gap-0.5 pl-3 border-l border-gray-200' data-related></div>
+        </div>`;
+
+      // Related questions
+      const relContainer=section.querySelector('[data-related]');
+      ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
+        const b=document.createElement('button');
+        b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
+        b.onclick=()=>handleQuery(b.textContent);
+        relContainer.appendChild(b);
+      });
+
+      // Insert to bottom (chat-like behavior - newest at bottom)
+      summaryView.append(section);
+
+      // Get summary element
+      const answerEl=section.querySelector('[data-summary]');
+
+      // Toolbar: open summary panel
+      const summaryBtn=section.querySelector('[data-summary-btn]');
+      summaryBtn.addEventListener('click',()=>{
+        const answerText=answerEl.textContent||'';
+        generateSummary(answerText);
+      });
+
+      // Toolbar: open sources panel
+      const sourceBtn=section.querySelector('[data-sources-btn]');
+      sourceBtn.addEventListener('click',()=>sourcePanel.classList.toggle('active'));
+
+      // Replace skeleton with final summary
+      setTimeout(()=>{ fillSummary(answerEl, query); }, 800);
+
+      // icons
+      if(window.lucide){ lucide.createIcons(); }
+
+      // Return section for scroll targeting
+      return section;
+    }
+
+    // Handle query
+    function handleQuery(query){
+      const section = createPage(query);
+
+      // Clear previous recommendations and create new ones (only current query)
+      booksView.innerHTML='';
+      eventsView.innerHTML='';
+      createRecommendationPage(query);
+
+      home.classList.add('hidden');
+      composer.classList.remove('hidden');
+
+      // Scroll to position the new query at the top of viewport (chat-like: newest at bottom, but scrolls to show it at top)
+      requestAnimationFrame(()=>{
+        const headerHeight = 65; // Height of fixed navigation bar + small margin
+        // Get the h2 title element to scroll to it precisely
+        const titleElement = section.querySelector('h2');
+        const titleTop = titleElement.offsetTop + section.offsetTop; // Absolute position of title
+        const offsetPosition = titleTop - headerHeight;
+        window.scrollTo({top: offsetPosition, behavior: 'smooth'});
+      });
+    }
+
+    // Form events
+    form.addEventListener('submit',e=>{
+      e.preventDefault();
+      const query=(q.value||'').trim();
+      if(!query) return;
+      handleQuery(query);
+      q.value='';
+    });
+
+    composerForm.addEventListener('submit',e=>{
+      e.preventDefault();
+      const query=(q2.value||'').trim();
+      if(!query) return;
+      handleQuery(query);
+      q2.value='';
+    });
+
+    // Panel close handlers
+    closeSource.addEventListener('click',()=>sourcePanel.classList.remove('active'));
+    closeSummary.addEventListener('click',()=>summaryPanel.classList.remove('active'));
+  </script>
 </body>
 </html>
