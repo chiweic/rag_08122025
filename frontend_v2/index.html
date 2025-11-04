@@ -662,32 +662,54 @@
       }
     }
 
-    // Mock book data generator
-    function generateMockBooks(query){
-      const bookTitles=['禪修指南','佛教入門','心靈成長','正念練習','智慧人生'];
-      const authors=['聖嚴法師','星雲大師','證嚴法師','一行禪師','達賴喇嘛'];
-      return Array.from({length:3},(_,i)=>({
-        title:bookTitles[i%bookTitles.length]+' - '+query,
-        author:authors[i%authors.length],
-        description:`這本書深入探討了${query}的核心概念，提供了實用的修行方法和智慧指導。`,
-        isbn:`978-986-${1000+i}-${100+i}-${i}`,
-        price:`NT$ ${280+i*20}`
-      }));
+    // Fetch real book recommendations from API
+    async function fetchBooks(query){
+      try {
+        const response = await fetch(`${API_BASE_URL}/books/recommend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, top_k: 3 })
+        });
+        if (!response.ok) throw new Error('書籍推薦失敗');
+        const data = await response.json();
+        return data.recommendations.map(book => ({
+          title: book.title,
+          author: book.author || '法鼓文化',
+          description: book.content || book.description || '探索佛學智慧的經典作品',
+          isbn: book.isbn || '',
+          price: book.price ? `NT$ ${book.price}` : '洽詢',
+          similarity: book.similarity
+        }));
+      } catch (error) {
+        console.error('Error fetching books:', error);
+        return [];
+      }
     }
 
-    // Mock event data generator
-    function generateMockEvents(query){
-      const eventTypes=['禪修營','讀書會','講座','工作坊','共修'];
-      const locations=['安和分院','中山精舍','農禪寺','法鼓山園區','德貴學苑'];
-      return Array.from({length:3},(_,i)=>({
-        title:`${query}相關 - ${eventTypes[i%eventTypes.length]}`,
-        location:locations[i%locations.length],
-        date:`2025/11/${15+i*5}`,
-        time:'14:00-17:00',
-        description:`透過${eventTypes[i%eventTypes.length]}的形式，深入學習${query}的理論與實踐。`,
-        capacity:`${20+i*10}人`,
-        instructor:i===0?'資深法師':i===1?'專業講師':'經驗豐富的帶領者'
-      }));
+    // Fetch real event recommendations from API
+    async function fetchEvents(query){
+      try {
+        const response = await fetch(`${API_BASE_URL}/events/recommend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, top_k: 3 })
+        });
+        if (!response.ok) throw new Error('活動推薦失敗');
+        const data = await response.json();
+        return data.recommendations.map(event => ({
+          title: event.title || '佛學活動',
+          location: event.location || '線上',
+          date: event.time_period || '待公告',
+          time: event.date || '',
+          description: event.keyphrases?.join('、') || event.description || '深入學習佛法的實踐活動',
+          capacity: event.target_audience || '開放報名',
+          instructor: event.organizer || '法鼓山',
+          category: event.category || '共修'
+        }));
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        return [];
+      }
     }
 
     // Carousel class
@@ -944,89 +966,105 @@
       if(window.lucide){ lucide.createIcons(); }
     }
 
-    // Create recommendation page
-    function createRecommendationPage(query){
-      // Books section with carousel
+    // Create recommendation page (async to fetch real data)
+    async function createRecommendationPage(query){
+      // Books section with loading state
       const bookSection=document.createElement('section');
       bookSection.className='bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden p-6 sm:p-8';
-
-      const books=generateMockBooks(query);
-      let booksHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="book-open" class="w-5 h-5"></i>${query} - 佛學經典推薦</h2>
-        <div class="carousel-container">
-          <button class="carousel-btn prev"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-          <button class="carousel-btn next"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-          <div class="carousel-track">`;
-
-      books.forEach(book=>{
-        booksHTML+=`
-          <div class="carousel-item">
-            <div class="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-amber-50 to-orange-50 mx-2">
-              <div class="flex justify-between items-start mb-3">
-                <h4 class="font-semibold text-gray-900 text-base">${book.title}</h4>
-                <span class="text-teal-600 font-semibold text-base">${book.price}</span>
-              </div>
-              <div class="text-sm text-gray-600 mb-3 flex items-center gap-2">
-                <i data-lucide="user" class="w-4 h-4"></i>
-                <span>${book.author}</span>
-              </div>
-              <p class="text-sm text-gray-700 leading-relaxed mb-4">${book.description}</p>
-              <div class="flex items-center justify-between mt-4 pt-4 border-t border-orange-200">
-                <span class="text-xs text-gray-500 flex items-center gap-1">
-                  <i data-lucide="barcode" class="w-3 h-3"></i>${book.isbn}
-                </span>
-                <button class="text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium">查看詳情</button>
-              </div>
-            </div>
-          </div>`;
-      });
-
-      booksHTML+=`</div><div class="carousel-dots"></div></div>`;
-      bookSection.innerHTML=booksHTML;
+      bookSection.innerHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="book-open" class="w-5 h-5"></i>${query} - 佛學經典推薦</h2>
+        <div class='typing-indicator'><div class='typing-dot'></div><div class='typing-dot'></div><div class='typing-dot'></div></div>`;
       booksView.append(bookSection);
 
-      // Events section with carousel
+      // Events section with loading state
       const eventSection=document.createElement('section');
       eventSection.className='bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden p-6 sm:p-8';
+      eventSection.innerHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="calendar-heart" class="w-5 h-5"></i>${query} - 解行並重活動</h2>
+        <div class='typing-indicator'><div class='typing-dot'></div><div class='typing-dot'></div><div class='typing-dot'></div></div>`;
+      eventsView.append(eventSection);
 
-      const events=generateMockEvents(query);
-      let eventsHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="calendar-heart" class="w-5 h-5"></i>${query} - 解行並重活動</h2>
-        <div class="carousel-container">
+      if(window.lucide){ lucide.createIcons(); }
+
+      // Fetch books and events in parallel
+      const [books, events] = await Promise.all([fetchBooks(query), fetchEvents(query)]);
+
+      // Render books
+      let booksHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="book-open" class="w-5 h-5"></i>${query} - 佛學經典推薦</h2>`;
+      if(books.length > 0){
+        booksHTML+=`<div class="carousel-container">
           <button class="carousel-btn prev"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
           <button class="carousel-btn next"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
           <div class="carousel-track">`;
 
-      events.forEach(event=>{
-        eventsHTML+=`
-          <div class="carousel-item">
-            <div class="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-cyan-50 mx-2">
-              <div class="flex justify-between items-start mb-3">
-                <h4 class="font-semibold text-gray-900 text-sm">${event.title}</h4>
-                <span class="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">線下活動</span>
+        books.forEach(book=>{
+          booksHTML+=`
+            <div class="carousel-item">
+              <div class="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-amber-50 to-orange-50 mx-2">
+                <h4 class="font-semibold text-gray-900 text-base mb-3">${book.title}</h4>
+                <div class="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                  <i data-lucide="user" class="w-4 h-4"></i>
+                  <span>${book.author}</span>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed mb-4">${book.description}</p>
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-orange-200">
+                  <span class="text-xs text-gray-500 flex items-center gap-1">
+                    <i data-lucide="barcode" class="w-3 h-3"></i>${book.isbn}
+                  </span>
+                  <button class="text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium">查看詳情</button>
+                </div>
               </div>
-              <div class="space-y-1.5 text-xs text-gray-600 mb-3 bg-white/50 p-3 rounded">
-                <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500"></i><span class="font-medium">${event.location}</span></div>
-                <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-blue-500"></i>${event.date} ${event.time}</div>
-                <div class="flex items-center gap-2"><i data-lucide="users" class="w-3.5 h-3.5 text-green-500"></i>名額：${event.capacity}</div>
-                <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-3.5 h-3.5 text-purple-500"></i>${event.instructor}</div>
-              </div>
-              <p class="text-sm text-gray-700 leading-relaxed mb-3">${event.description}</p>
-              <button class="text-sm bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-2 rounded hover:shadow-lg transition-all w-full font-medium">🎯 立即報名參加</button>
-            </div>
-          </div>`;
-      });
+            </div>`;
+        });
+        booksHTML+=`</div><div class="carousel-dots"></div></div>`;
+      }else{
+        booksHTML+=`<p class="text-gray-600">暫無書籍推薦</p>`;
+      }
+      bookSection.innerHTML=booksHTML;
 
-      eventsHTML+=`</div><div class="carousel-dots"></div></div>`;
+      // Render events
+      let eventsHTML=`<h2 class='font-semibold text-lg mb-4 text-teal-700 flex items-center gap-2'><i data-lucide="calendar-heart" class="w-5 h-5"></i>${query} - 解行並重活動</h2>`;
+      if(events.length > 0){
+        eventsHTML+=`<div class="carousel-container">
+          <button class="carousel-btn prev"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <button class="carousel-btn next"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          <div class="carousel-track">`;
+
+        events.forEach(event=>{
+          eventsHTML+=`
+            <div class="carousel-item">
+              <div class="border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-cyan-50 mx-2">
+                <div class="flex justify-between items-start mb-3">
+                  <h4 class="font-semibold text-gray-900 text-sm">${event.title}</h4>
+                  <span class="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">線下活動</span>
+                </div>
+                <div class="space-y-1.5 text-xs text-gray-600 mb-3 bg-white/50 p-3 rounded">
+                  <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500"></i><span class="font-medium">${event.location}</span></div>
+                  <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-blue-500"></i>${event.date} ${event.time}</div>
+                  <div class="flex items-center gap-2"><i data-lucide="users" class="w-3.5 h-3.5 text-green-500"></i>名額：${event.capacity}</div>
+                  <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-3.5 h-3.5 text-purple-500"></i>${event.instructor}</div>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed mb-3">${event.description}</p>
+                <button class="text-sm bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-2 rounded hover:shadow-lg transition-all w-full font-medium">🎯 立即報名參加</button>
+              </div>
+            </div>`;
+        });
+        eventsHTML+=`</div><div class="carousel-dots"></div></div>`;
+      }else{
+        eventsHTML+=`<p class="text-gray-600">暫無活動推薦</p>`;
+      }
       eventSection.innerHTML=eventsHTML;
-      eventsView.append(eventSection);
 
       if(window.lucide){ lucide.createIcons(); }
 
       // Initialize carousels after DOM is ready
       setTimeout(()=>{
-        const bookCarousel = bookSection.querySelector('.carousel-container');
-        const eventCarousel = eventSection.querySelector('.carousel-container');
-        if(bookCarousel) new Carousel(bookCarousel, 4000);
-        if(eventCarousel) new Carousel(eventCarousel, 4000);
+        if(books.length > 0){
+          const bookCarousel = bookSection.querySelector('.carousel-container');
+          if(bookCarousel) new Carousel(bookCarousel, 4000);
+        }
+        if(events.length > 0){
+          const eventCarousel = eventSection.querySelector('.carousel-container');
+          if(eventCarousel) new Carousel(eventCarousel, 4000);
+        }
       }, 100);
     }
 

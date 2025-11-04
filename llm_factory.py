@@ -87,12 +87,17 @@ class LLMFactory:
             if not settings.custom_llm_base_url:
                 raise ValueError("Custom LLM base URL not found in settings")
             # Custom endpoint uses OpenAI-compatible API
+            # Add headers to bypass Cloudflare (mimic curl)
             return ChatOpenAI(
                 api_key=settings.custom_llm_api_key or "empty",
                 base_url=settings.custom_llm_base_url,
                 model=model or "output/qwen3-4b_lora_sft_5000",
                 max_tokens=max_tokens,
-                streaming=streaming
+                streaming=streaming,
+                default_headers={
+                    "User-Agent": "curl/8.5.0",
+                    "Accept": "*/*"
+                }
             )
         
         else:
