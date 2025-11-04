@@ -1331,6 +1331,17 @@
         if(sourcesSpan){
           sourcesSpan.textContent = `${sectionSources.length} 來源`;
         }
+
+        // Scroll to the query section AFTER content is loaded
+        requestAnimationFrame(()=>{
+          const headerHeight = 65;
+          const titleElement = section.querySelector('h2');
+          if (titleElement) {
+            const titleTop = titleElement.getBoundingClientRect().top + window.pageYOffset;
+            const offsetPosition = titleTop - headerHeight;
+            window.scrollTo({top: offsetPosition, behavior: 'smooth'});
+          }
+        });
       })();
 
       // icons
@@ -1352,15 +1363,7 @@
       home.classList.add('hidden');
       composer.classList.remove('hidden');
 
-      // Scroll to position the new query at the top of viewport (chat-like: newest at bottom, but scrolls to show it at top)
-      requestAnimationFrame(()=>{
-        const headerHeight = 65; // Height of fixed navigation bar + small margin
-        // Get the h2 title element to scroll to it precisely
-        const titleElement = section.querySelector('h2');
-        const titleTop = titleElement.offsetTop + section.offsetTop; // Absolute position of title
-        const offsetPosition = titleTop - headerHeight;
-        window.scrollTo({top: offsetPosition, behavior: 'smooth'});
-      });
+      // Note: Scroll happens after content loads (inside createPage's fillSummary callback)
     }
 
     // Form events
