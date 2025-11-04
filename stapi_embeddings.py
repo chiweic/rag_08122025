@@ -1,5 +1,9 @@
 """
-Custom Ollama Embeddings wrapper for LangChain
+STAPI Embeddings wrapper for LangChain
+
+Supports both:
+- STAPI (OpenAI-compatible embedding API)
+- Ollama native API (for backward compatibility)
 """
 
 import requests
@@ -12,8 +16,8 @@ from langchain.schema.embeddings import Embeddings
 logger = logging.getLogger(__name__)
 
 
-class OllamaEmbeddings(Embeddings):
-    """Ollama embeddings integration for LangChain."""
+class STAPIEmbeddings(Embeddings):
+    """STAPI/Ollama embeddings integration for LangChain."""
 
     def __init__(
         self,
@@ -24,11 +28,11 @@ class OllamaEmbeddings(Embeddings):
         max_workers: int = 10
     ):
         """
-        Initialize Ollama embeddings.
+        Initialize STAPI embeddings.
 
         Args:
-            base_url: Base URL for Ollama API (e.g., http://ollama.changpt.org)
-            model: Model name (e.g., bge-m3)
+            base_url: Base URL for STAPI/Ollama API (e.g., http://ollama.changpt.org/v1)
+            model: Model name (e.g., BAAI/bge-large-zh-v1.5)
             api_key: API key for authentication
             timeout: Request timeout in seconds
             max_workers: Maximum concurrent workers for parallel requests
@@ -44,15 +48,25 @@ class OllamaEmbeddings(Embeddings):
         if api_key:
             self.headers["Authorization"] = f"Bearer {api_key}"
 
-        logger.info(f"Initialized OllamaEmbeddings: {base_url}, model={model}, max_workers={max_workers}")
+        logger.info(f"Initialized STAPIEmbeddings: {base_url}, model={model}, max_workers={max_workers}")
 
     def _generate_embedding(self, text: str, max_retries: int = 3) -> List[float]:
         """Generate embedding for a single text with retry logic."""
-        url = f"{self.base_url}/api/embeddings"
-        payload = {
-            "model": self.model,
-            "prompt": text
-        }
+        # Support both Ollama native API and OpenAI-compatible API (STAPI)
+        if "/v1" in self.base_url:
+            # OpenAI-compatible format (STAPI)
+            url = f"{self.base_url}/embeddings"
+            payload = {
+                "model": self.model,
+                "input": text
+            }
+        else:
+            # Ollama native format
+            url = f"{self.base_url}/api/embeddings"
+            payload = {
+                "model": self.model,
+                "prompt": text
+            }
 
         for attempt in range(max_retries):
             try:
@@ -65,8 +79,13 @@ class OllamaEmbeddings(Embeddings):
                 response.raise_for_status()
 
                 result = response.json()
+                # Handle both Ollama format and OpenAI format (STAPI)
                 if "embedding" in result:
+                    # Ollama native format
                     return result["embedding"]
+                elif "data" in result and len(result["data"]) > 0:
+                    # OpenAI-compatible format (STAPI)
+                    return result["data"][0]["embedding"]
                 else:
                     raise ValueError(f"No embedding in response: {result}")
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Perplexity-style UI (related question fixed)</title>
+  <title>學佛入門</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -42,13 +42,95 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom:1px solid rgba(229, 231, 235, 0.5);
-      padding: 0;
+      padding: 0 2rem;
       display:flex;
-      justify-content:center;
+      justify-content:space-between;
+      align-items:center;
       gap: 0;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
+    .nav-brand{display:flex;align-items:center;gap:0.5rem;font-weight:600;color:#0f766e;font-size:0.95rem;}
+    .nav-buttons{display:flex;align-items:center;gap:0.75rem;}
+    .nav-btn{
+      padding:0.5rem 1rem;
+      font-size:0.875rem;
+      font-weight:500;
+      color:#6b7280;
+      background:transparent;
+      border:none;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:0.4rem;
+      transition:all 0.2s ease;
+    }
+    .nav-btn:hover{color:#0d9488;}
+    .nav-user{position:relative;}
+    .dropdown{
+      position:absolute;
+      right:0;
+      top:100%;
+      margin-top:0.5rem;
+      min-width:13rem;
+      background:white;
+      border:1px solid #e5e7eb;
+      border-radius:0.75rem;
+      box-shadow:0 8px 20px rgba(15,118,110,0.15);
+      padding:0.5rem;
+      display:none;
+      z-index:80;
+    }
+    .dropdown button{
+      width:100%;
+      text-align:left;
+      padding:0.65rem 0.75rem;
+      font-size:0.85rem;
+      border:none;
+      background:transparent;
+      border-radius:0.5rem;
+      color:#374151;
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      cursor:pointer;
+      transition:all 0.2s ease;
+    }
+    .dropdown button:hover{background:#f0fdfa;color:#0f766e;}
+    #journeyBackdrop{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,118,110,0.2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity 0.3s ease, visibility 0.3s ease;z-index:35;}
+    #journeyBackdrop.active{opacity:1;visibility:visible;}
+    #journeyPanel{position:fixed;top:0;right:-70%;width:60%;max-width:640px;height:100%;background:white;box-shadow:-6px 0 24px rgba(15,118,110,0.15);padding:2.5rem 2rem;overflow-y:auto;transition:right 0.5s cubic-bezier(0.22,1,0.36,1);z-index:60;}
+    #journeyPanel.active{right:0;}
+    #aboutPanel,#loginPanel,#registerPanel{
+      position:fixed;
+      top:-100%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      width:100%;
+      max-width:480px;
+      background:white;
+      border-radius:1.25rem;
+      box-shadow:0 24px 60px rgba(15,118,110,0.2);
+      padding:2.5rem 2.75rem;
+      z-index:70;
+      opacity:0;
+      transition:top 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
+    }
+    #aboutPanel.active,#loginPanel.active,#registerPanel.active{
+      top:50%;
+      opacity:1;
+    }
+    .form-input{width:100%;padding:0.75rem 1rem;border:1px solid #e5e7eb;border-radius:0.75rem;font-size:0.9rem;transition:all 0.2s;}
+    .form-input:focus{outline:none;border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,0.15);}
+    .btn-primary{width:100%;padding:0.85rem 1.1rem;background:linear-gradient(135deg,#14b8a6,#0d9488);color:white;border:none;border-radius:0.9rem;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(20,184,166,0.35);}
+    .btn-secondary{width:100%;padding:0.8rem 1.1rem;background:white;color:#6b7280;border:1px solid #e5e7eb;border-radius:0.9rem;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.2s;}
+    .btn-secondary:hover{border-color:#14b8a6;color:#0d9488;}
     .skeleton-line{height:0.75rem;background:#e5e7eb;border-radius:4px;margin:0.25rem 0;}
+    .typing-indicator{display:flex;align-items:center;gap:0.4rem;padding:1rem 1.25rem;background:#f0fdfa;border-radius:1.25rem;width:fit-content;margin:0.5rem 0;}
+    .typing-dot{width:8px;height:8px;border-radius:50%;background:#14b8a6;animation:typing 1.4s infinite;}
+    .typing-dot:nth-child(2){animation-delay:0.2s;}
+    .typing-dot:nth-child(3){animation-delay:0.4s;}
+    @keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.6;}30%{transform:translateY(-10px);opacity:1;}}
     #sourcePanel {position:fixed;top:0;right:-55%;width:50%;height:100%;background:white;box-shadow:-3px 0 8px rgba(0,0,0,0.1);transition:right 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
     #sourcePanel.active { right: 0; }
     #summaryPanel {position:fixed;top:0;left:-55%;width:50%;height:100%;background:white;box-shadow:3px 0 8px rgba(0,0,0,0.1);transition:left 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
@@ -81,8 +163,132 @@
 </head>
 <body>
   <div class="global-tabbar">
-    <span class="tab-btn tab-active" data-tab='answer'>問答</span>
-    <span class="tab-btn tab-inactive" data-tab='recommendation'>推薦</span>
+    <div class="nav-brand">
+      <i data-lucide="sprout" class="w-4 h-4"></i>
+      <span>學佛入門 · AI 數位義工</span>
+    </div>
+    <div class="flex">
+      <span class="tab-btn tab-active" data-tab='answer'>問答</span>
+      <span class="tab-btn tab-inactive" data-tab='recommendation'>推薦</span>
+    </div>
+    <div class="nav-buttons">
+      <button id="aboutBtn" class="nav-btn">
+        <i data-lucide="info" class="w-4 h-4"></i>關於
+      </button>
+      <button id="loginBtn" class="nav-btn">
+        <i data-lucide="log-in" class="w-4 h-4"></i>登入
+      </button>
+      <div id="userMenu" class="nav-user" style="display:none;">
+        <button id="userMenuBtn" class="nav-btn">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span id="userName">訪客</span>
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>
+        <div id="userDropdown" class="dropdown">
+          <button id="journeyMenuBtn">
+            <i data-lucide="book-open" class="w-4 h-4"></i>個人學習歷程
+          </button>
+          <button id="logoutBtn" style="color:#ef4444;">
+            <i data-lucide="log-out" class="w-4 h-4"></i>登出
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="journeyBackdrop"></div>
+  <div id="journeyPanel">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-teal-700 flex items-center gap-2">
+        <i data-lucide="book-open" class="w-6 h-6"></i>個人學習歷程（開發中）
+      </h2>
+      <button id="closeJourney" class="text-gray-400 hover:text-gray-600">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+    <div class="space-y-4 text-gray-600">
+      <p>學習歷程將整合你的提問、書籍推薦和活動參與，協助你掌握佛法進展。</p>
+      <p class="text-sm text-gray-500">目前仍在規劃中，歡迎提供回饋。</p>
+    </div>
+  </div>
+
+  <div id="aboutPanel">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-teal-700 flex items-center gap-2">
+        <i data-lucide="info" class="w-6 h-6"></i>關於學佛入門 AI 數位義工
+      </h2>
+      <button id="closeAbout" class="text-gray-400 hover:text-gray-600">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+    <div class="space-y-4 text-gray-600 leading-7">
+      <p>本平台結合 Retrieval-Augmented Generation 技術與聖嚴法師著作，讓學習佛法變得更容易。</p>
+      <p>透過問答、書籍推薦與活動資訊，協助自修學員建立完整的修學歷程。</p>
+      <p class="text-sm text-gray-500 border-t pt-4">© 2025 DDM RAG System · 技術支持：志工工程團隊</p>
+    </div>
+  </div>
+
+  <div id="loginPanel">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-teal-700 flex items-center gap-2">
+        <i data-lucide="user-circle" class="w-6 h-6"></i>登入
+      </h2>
+      <button id="closeLogin" class="text-gray-400 hover:text-gray-600">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+        <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" autocomplete="email" required />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+        <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+
+      <button type="submit" class="btn-primary">登入</button>
+      <button type="button" id="switchToRegister" class="btn-secondary">還沒有帳號？立即註冊</button>
+    </form>
+  </div>
+
+  <div id="registerPanel">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-teal-700 flex items-center gap-2">
+        <i data-lucide="user-plus" class="w-6 h-6"></i>建立帳號
+      </h2>
+      <button id="closeRegister" class="text-gray-400 hover:text-gray-600">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+
+    <form id="registerForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+        <input type="email" id="registerEmail" class="form-input" placeholder="your@email.com" autocomplete="email" required />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+        <input type="password" id="registerPassword" class="form-input" placeholder="至少 8 個字元" minlength="8" autocomplete="new-password" required />
+        <p class="text-xs text-gray-500 mt-1">密碼需至少 8 個字元，請避免使用常見字串。</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+        <input type="text" id="registerFullName" class="form-input" placeholder="您的姓名" autocomplete="name" required />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">DDM 學員編號（選填）</label>
+        <input type="text" id="registerStudentId" class="form-input" placeholder="例如 DDM001" />
+      </div>
+
+      <button type="submit" id="registerSubmit" class="btn-primary">註冊</button>
+      <button type="button" id="backToLogin" class="btn-secondary">已有帳號？返回登入</button>
+    </form>
   </div>
 
   <div id="summaryPanel">
@@ -120,15 +326,26 @@
 
   <main class="max-w-4xl mx-auto px-4 pt-16 pb-20 space-y-8" id="mainArea">
     <section id="home" class="text-center">
-      <h1 class="text-4xl font-bold text-teal-700 mb-8">佛學入門 - AI數位義工</h1>
+      <h1 class="text-4xl font-bold text-teal-700 mb-8">學佛入門 - AI數位義工</h1>
       <form id="searchForm" class="max-w-2xl mx-auto flex items-center bg-white rounded-full shadow-md px-4 py-2 ring-1 ring-gray-200">
         <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
         <input id="q" type="text" placeholder="請問任何問題。輸入 @ 以提及。" class="flex-1 px-3 py-2 outline-none" />
         <button type="submit" class="ml-2 p-2 bg-teal-600 rounded-full text-white hover:bg-teal-700"><i data-lucide="mic" class="w-5 h-5"></i></button>
       </form>
-      <div id="suggestions" class="mt-10 max-w-md mx-auto text-left">
-        <h3 class="text-xs font-semibold text-gray-500 mb-2 tracking-wide">大家也在問：</h3>
-        <div id="suggestionList" class="flex flex-col gap-1 pl-3 border-l border-gray-200 transition-opacity duration-700"></div>
+      <div class="max-w-2xl mx-auto mt-3 flex items-center justify-end">
+        <button id="retrievalModeToggle" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-teal-500 hover:bg-teal-50 transition-all text-sm">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span id="retrievalModeLabel">檢索模式</span>
+          <div class="relative inline-block w-9 h-5 transition duration-200 ease-in-out">
+            <input type="checkbox" id="retrievalModeCheckbox" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-teal-600 transition-all"></div>
+            <div class="dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-all peer-checked:translate-x-4"></div>
+          </div>
+        </button>
+      </div>
+      <div id="suggestions" class="mt-32 max-w-2xl mx-auto text-left">
+        <h3 class="text-[10px] font-normal text-gray-400/60 mb-2">大家也在問：</h3>
+        <div id="suggestionList" class="flex flex-col gap-1 pl-3 border-l border-gray-200/50 transition-opacity duration-700"></div>
       </div>
     </section>
 
@@ -148,6 +365,17 @@
     </div>
 
     <div id="composer" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 hidden">
+      <div class="flex items-center justify-end mb-2">
+        <button id="retrievalModeToggle2" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-teal-500 hover:bg-teal-50 transition-all text-sm shadow-sm">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span id="retrievalModeLabel2">檢索模式</span>
+          <div class="relative inline-block w-9 h-5 transition duration-200 ease-in-out">
+            <input type="checkbox" id="retrievalModeCheckbox2" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-teal-600 transition-all"></div>
+            <div class="dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-all peer-checked:translate-x-4"></div>
+          </div>
+        </button>
+      </div>
       <form id="composerForm" class="flex items-center bg-white rounded-full shadow-lg w-full px-4 py-2 ring-1 ring-gray-200">
         <i data-lucide="message-circle" class="w-5 h-5 text-gray-400"></i>
         <input id="q2" type="text" placeholder="輸入下一個問題…（/ 聚焦，Enter 送出）" class="flex-1 px-3 py-2 outline-none" />
@@ -173,6 +401,135 @@
     const suggestionList=document.getElementById('suggestionList');
     const composerForm=document.getElementById('composerForm');
     const q2=document.getElementById('q2');
+    const aboutBtn=document.getElementById('aboutBtn');
+    const loginBtn=document.getElementById('loginBtn');
+    const userMenu=document.getElementById('userMenu');
+    const userMenuBtn=document.getElementById('userMenuBtn');
+    const userDropdown=document.getElementById('userDropdown');
+    const logoutBtn=document.getElementById('logoutBtn');
+    const journeyMenuBtn=document.getElementById('journeyMenuBtn');
+    const journeyPanel=document.getElementById('journeyPanel');
+    const journeyBackdrop=document.getElementById('journeyBackdrop');
+    const closeJourney=document.getElementById('closeJourney');
+    const aboutPanel=document.getElementById('aboutPanel');
+    const closeAbout=document.getElementById('closeAbout');
+    const loginPanel=document.getElementById('loginPanel');
+    const closeLogin=document.getElementById('closeLogin');
+    const switchToRegister=document.getElementById('switchToRegister');
+    const registerPanel=document.getElementById('registerPanel');
+    const closeRegister=document.getElementById('closeRegister');
+    const backToLogin=document.getElementById('backToLogin');
+    const loginFormEl=document.getElementById('loginForm');
+    const registerFormEl=document.getElementById('registerForm');
+    const registerSubmit=document.getElementById('registerSubmit');
+    const userNameLabel=document.getElementById('userName');
+
+    const API_BASE_URL=window.API_BASE_URL||'http://localhost:8000';
+    let authToken=localStorage.getItem('authToken');
+    let currentUser=null;
+    let retrievalMode=false; // Toggle between /query and /retrieve endpoints
+
+    const retrievalModeToggle=document.getElementById('retrievalModeToggle');
+    const retrievalModeCheckbox=document.getElementById('retrievalModeCheckbox');
+    const retrievalModeLabel=document.getElementById('retrievalModeLabel');
+    const retrievalModeToggle2=document.getElementById('retrievalModeToggle2');
+    const retrievalModeCheckbox2=document.getElementById('retrievalModeCheckbox2');
+    const retrievalModeLabel2=document.getElementById('retrievalModeLabel2');
+
+    function updateUIForLoggedIn(user){
+      loginBtn.style.display='none';
+      userMenu.style.display='flex';
+      userNameLabel.textContent=user.full_name||user.email;
+      if(window.lucide){ lucide.createIcons(); }
+    }
+
+    function updateUIForLoggedOut(){
+      loginBtn.style.display='flex';
+      userMenu.style.display='none';
+      userDropdown.style.display='none';
+      if(window.lucide){ lucide.createIcons(); }
+    }
+
+    function logout(){
+      authToken=null;
+      currentUser=null;
+      localStorage.removeItem('authToken');
+      updateUIForLoggedOut();
+    }
+
+    async function login(email,password){
+      try{
+        const response=await fetch(`${API_BASE_URL}/auth/login`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email,password})
+        });
+        if(!response.ok){
+          const error=await response.json().catch(()=>({detail:'登入失敗'}));
+          throw new Error(error.detail||'登入失敗');
+        }
+        const data=await response.json();
+        authToken=data.access_token;
+        localStorage.setItem('authToken',authToken);
+        await verifyToken();
+        return true;
+      }catch(error){
+        console.error('Login failed:',error);
+        alert(error.message);
+        return false;
+      }
+    }
+
+    async function registerUser(email,password,fullName,studentId){
+      try{
+        const response=await fetch(`${API_BASE_URL}/auth/register`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            email,
+            password,
+            full_name:fullName,
+            ddm_student_id:studentId||null
+          })
+        });
+        if(!response.ok){
+          const error=await response.json().catch(()=>({detail:'註冊失敗'}));
+          throw new Error(error.detail||'註冊失敗');
+        }
+        return await response.json();
+      }catch(error){
+        console.error('Registration failed:',error);
+        throw error;
+      }
+    }
+
+    async function verifyToken(){
+      if(!authToken){
+        updateUIForLoggedOut();
+        return;
+      }
+      try{
+        const response=await fetch(`${API_BASE_URL}/auth/me`,{
+          headers:{'Authorization':`Bearer ${authToken}`}
+        });
+        if(!response.ok){
+          throw new Error('Token 驗證失敗');
+        }
+        currentUser=await response.json();
+        updateUIForLoggedIn(currentUser);
+      }catch(error){
+        console.warn('Auth verification failed:',error);
+        logout();
+      }
+    }
+
+    function initAuth(){
+      if(authToken){
+        verifyToken();
+      }else{
+        updateUIForLoggedOut();
+      }
+    }
 
     // Tab switching
     const tabs=document.querySelectorAll('.tab-btn');
@@ -214,7 +571,24 @@
     switchTab('answer');
 
     // Start page suggestions
-    const startQuestions=['AI 會取代人類工作嗎？','如何練習正念？','量子電腦的原理是什麼？','為什麼人會做夢？','學習第二語言的最佳方法是什麼？'];
+    let startQuestions=['AI 會取代人類工作嗎？','如何練習正念？','量子電腦的原理是什麼？','為什麼人會做夢？','學習第二語言的最佳方法是什麼？'];
+
+    async function fetchFAQQuestions(){
+      try{
+        const response=await fetch(`${API_BASE_URL}/faq`);
+        if(response.ok){
+          const data=await response.json();
+          if(data.questions && data.questions.length>0){
+            startQuestions=data.questions;
+            renderSuggestions();
+          }
+        }
+      }catch(error){
+        console.warn('Failed to fetch FAQ questions, using defaults:', error);
+        // Keep using default questions if fetch fails
+      }
+    }
+
     function renderSuggestions(){
       suggestionList.innerHTML='';
       startQuestions.forEach(qText=>{
@@ -226,7 +600,13 @@
         suggestionList.appendChild(btn);
       });
     }
+
+    // Render default questions immediately, then fetch real ones
     renderSuggestions();
+    fetchFAQQuestions();
+
+    // Refresh FAQ questions every 10 seconds
+    setInterval(fetchFAQQuestions, 10000);
 
     // Toolbar
     function createToolbar(){
@@ -246,8 +626,8 @@
       </div>`;
     }
 
-    // Generate summary (simulate API call)
-    function generateSummary(answerText){
+    // Generate summary (call API)
+    async function generateSummary(answerText){
       // Show loading skeleton
       summaryContent.innerHTML=`
         <div class="summary-skeleton">
@@ -261,11 +641,25 @@
       // Open panel
       summaryPanel.classList.add('active');
 
-      // Simulate API delay (1-2 seconds)
-      setTimeout(()=>{
-        const summaryText=`這是一個自動生成的摘要。主要討論了${answerText.substring(0,30)}...等核心概念。\n\n關鍵重點包括：\n• 第一個重要觀點\n• 第二個關鍵內容\n• 第三個核心思想\n\n總結來說，這個回答提供了深入的見解和實用的建議。`;
+      try{
+        const response = await fetch(`${API_BASE_URL}/summarize`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ text: answerText })
+        });
+
+        if(!response.ok){
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const summaryText = data.summary || '無法生成摘要';
+
         summaryContent.innerHTML=`<div class="prose prose-sm max-w-none"><p class="text-gray-700 leading-relaxed whitespace-pre-line">${summaryText}</p></div>`;
-      }, 1500);
+      }catch(error){
+        console.error('Error generating summary:', error);
+        summaryContent.innerHTML=`<div class="text-red-600"><p>❌ 摘要生成失敗: ${error.message}</p></div>`;
+      }
     }
 
     // Mock book data generator
@@ -382,11 +776,172 @@
       for(let i=0;i<paraCount;i++){ html+=mockParagraph(); }
       html+=`</div><div class="my-6 border-t border-dashed border-gray-200"></div>`; return html;
     }
-    function fillSummary(el, query){
-      const pages=randInt(2,10);
-      let html=`<div class="prose max-w-none">`;
-      for(let p=0;p<pages;p++){ html+=mockPage(); }
-      html+=`</div>`; el.innerHTML=html;
+    async function fillSummary(el, query){
+      try{
+        if(retrievalMode){
+          // Non-streaming retrieval mode
+          const response = await fetch(`${API_BASE_URL}/retrieve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ query: query, top_k: 10 })
+          });
+
+          if(!response.ok){
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Display retrieved documents
+          let html = '<div class="prose max-w-none space-y-3">';
+          if(data.documents && data.documents.length > 0){
+            html += `<p class="text-sm text-gray-600 mb-3">找到 ${data.count} 個相關文件 (耗時: ${data.computation_time.toFixed(2)}秒)：</p>`;
+            data.documents.forEach((doc, idx) => {
+              const title = doc.metadata?.audio_title || doc.metadata?.title || '無標題';
+              const speaker = doc.metadata?.speaker || '';
+              const section = doc.metadata?.section || '';
+              const timestamp = doc.metadata?.timestamp_start && doc.metadata?.timestamp_end
+                ? `${doc.metadata.timestamp_start} - ${doc.metadata.timestamp_end}`
+                : '';
+
+              html += `
+                <div class="border border-gray-200 rounded-lg p-3 bg-gray-50 hover:bg-white transition-colors">
+                  <div class="flex items-start gap-2">
+                    <span class="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded flex-shrink-0">#${idx + 1}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-gray-900 mb-1">${title}</div>
+                      <div class="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+                        ${speaker ? `<span>👤 ${speaker}</span>` : ''}
+                        ${section ? `<span>📂 ${section}</span>` : ''}
+                        ${timestamp ? `<span>⏱️ ${timestamp}</span>` : ''}
+                        <span class="font-semibold text-teal-600">相似度: ${(doc.score * 100).toFixed(1)}%</span>
+                      </div>
+                      <div class="text-sm text-gray-700 leading-relaxed">${doc.text}</div>
+                    </div>
+                  </div>
+                </div>`;
+            });
+          }else{
+            html += '<p class="text-gray-600">沒有找到相關文件。</p>';
+          }
+          html += '</div>';
+          el.innerHTML = html;
+
+          // Return sources (documents from retrieve endpoint are the sources)
+          return data.documents || [];
+        }else{
+          // Streaming query mode
+          const response = await fetch(`${API_BASE_URL}/query/stream`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ question: query, top_k: 10, include_sources: true })
+          });
+
+          if(!response.ok){
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          // Create container for streaming text
+          el.innerHTML = '<div class="prose max-w-none"><p class="leading-7 text-gray-700" id="streamingText"></p></div>';
+          const streamingTextEl = el.querySelector('#streamingText');
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let sources = [];
+
+          while(true){
+            const {done, value} = await reader.read();
+            if(done) break;
+
+            buffer += decoder.decode(value, {stream: true});
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line in buffer
+
+            for(const line of lines){
+              if(line.startsWith('data: ')){
+                const data = line.slice(6).trim();
+                if(!data || data === '[DONE]') continue;
+
+                try{
+                  const parsed = JSON.parse(data);
+
+                  // Handle answer tokens
+                  if(parsed.type === 'answer' && parsed.content){
+                    streamingTextEl.textContent += parsed.content;
+                  }
+                  // Capture sources
+                  else if(parsed.type === 'sources' && parsed.sources){
+                    sources = parsed.sources;
+                  }
+                }catch(e){
+                  console.warn('Failed to parse SSE data:', data, e);
+                }
+              }
+            }
+          }
+
+          // Return sources from streaming response
+          return sources;
+        }
+      }catch(error){
+        console.error('Error fetching data:', error);
+        el.innerHTML = `<div class="text-red-600"><p>❌ 查詢失敗: ${error.message}</p></div>`;
+        return [];
+      }
+    }
+
+    // Display sources in the source panel
+    function displaySources(sources){
+      const sourcePanelTitle = sourcePanel.querySelector('h2');
+      const sourcePanelContent = sourcePanel.querySelector('.space-y-3');
+
+      // Update title with count
+      sourcePanelTitle.innerHTML = `<i data-lucide="book-open" class="w-5 h-5"></i>${sources.length} 個來源`;
+
+      // Clear and populate content
+      sourcePanelContent.innerHTML = '';
+
+      if(sources.length === 0){
+        sourcePanelContent.innerHTML = '<p class="text-gray-600">沒有來源資料</p>';
+        return;
+      }
+
+      sources.forEach((source, idx) => {
+        // Handle both /query and /retrieve response formats
+        const title = source.title || source.metadata?.audio_title || source.metadata?.title || '無標題';
+        const speaker = source.speaker || source.metadata?.speaker || '';
+        const section = source.metadata?.section || '';
+        const timestamp = source.timestamp || (source.metadata?.timestamp_start && source.metadata?.timestamp_end
+          ? `${source.metadata.timestamp_start} - ${source.metadata.timestamp_end}`
+          : '');
+        const audioUrl = source.audio_url || source.metadata?.audio_url || '';
+        const text = source.text || '';
+        const score = source.score ? `相似度: ${(source.score * 100).toFixed(1)}%` : '';
+
+        const sourceCard = document.createElement('div');
+        sourceCard.className = 'source-card';
+        sourceCard.innerHTML = `
+          <div class="flex items-start gap-3 mb-2">
+            <span class="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded flex-shrink-0">#${idx + 1}</span>
+            <div class="flex-1">
+              <div class="source-title text-base font-semibold text-gray-900 mb-1">${title}</div>
+              <div class="source-meta flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+                ${speaker ? `<span>👤 ${speaker}</span>` : ''}
+                ${section ? `<span>📂 ${section}</span>` : ''}
+                ${timestamp ? `<span>⏱️ ${timestamp}</span>` : ''}
+                ${score ? `<span class="font-semibold text-teal-600">${score}</span>` : ''}
+              </div>
+              ${text ? `<div class="source-desc text-sm text-gray-700 leading-relaxed mb-2">${text.substring(0, 200)}${text.length > 200 ? '...' : ''}</div>` : ''}
+              ${audioUrl ? `<a href="${audioUrl}" target="_blank" class="text-xs text-teal-600 hover:text-teal-700 flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i>查看來源</a>` : ''}
+            </div>
+          </div>
+        `;
+        sourcePanelContent.appendChild(sourceCard);
+      });
+
+      // Re-initialize lucide icons
+      if(window.lucide){ lucide.createIcons(); }
     }
 
     // Create recommendation page
@@ -483,32 +1038,83 @@
       section.innerHTML=`
         <h2 class='font-semibold text-lg mb-3 text-teal-700'>${query}</h2>
         <div data-summary>
-          <div class='animate-pulse'>
-            <div class='skeleton-line w-2/3'></div>
-            <div class='skeleton-line w-5/6'></div>
-            <div class='skeleton-line w-4/6'></div>
+          <div class='typing-indicator'>
+            <div class='typing-dot'></div>
+            <div class='typing-dot'></div>
+            <div class='typing-dot'></div>
           </div>
         </div>
         ${createToolbar()}
         <div class='mt-4 border-t pt-2 related-section'>
-          <h3 class='text-[11px] font-semibold text-gray-500 mb-1 tracking-wide'>相關問題</h3>
-          <div class='flex flex-col gap-0.5 pl-3 border-l border-gray-200' data-related></div>
+          <h3 class='text-[10px] font-normal text-gray-400/60 mb-1'>相關問題</h3>
+          <div class='flex flex-col gap-0.5 pl-3 border-l border-gray-200/50' data-related></div>
         </div>`;
 
-      // Related questions
+      // Related questions - fetch from API
       const relContainer=section.querySelector('[data-related]');
-      ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
-        const b=document.createElement('button');
-        b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
-        b.onclick=()=>handleQuery(b.textContent);
-        relContainer.appendChild(b);
-      });
+
+      // Fetch related queries from backend
+      (async ()=>{
+        try{
+          const response = await fetch(`${API_BASE_URL}/queries/related`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ query: query, top_k: 5, min_similarity: 0.5 })
+          });
+
+          if(response.ok){
+            const data = await response.json();
+
+            // Use real related queries if available
+            if(data.related_queries && data.related_queries.length > 0){
+              data.related_queries.forEach(relQuery=>{
+                const b=document.createElement('button');
+                b.type='button'; b.className='related-btn';
+                // Handle different response formats
+                const queryText = typeof relQuery === 'string' ? relQuery :
+                                 (relQuery.query || relQuery.text || JSON.stringify(relQuery));
+                b.textContent=queryText;
+                b.onclick=()=>handleQuery(queryText);
+                relContainer.appendChild(b);
+              });
+            } else {
+              // Fallback to generated suggestions if no related queries
+              ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
+                const b=document.createElement('button');
+                b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
+                b.onclick=()=>handleQuery(b.textContent);
+                relContainer.appendChild(b);
+              });
+            }
+          } else {
+            // Fallback on API error
+            ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
+              const b=document.createElement('button');
+              b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
+              b.onclick=()=>handleQuery(b.textContent);
+              relContainer.appendChild(b);
+            });
+          }
+        }catch(error){
+          console.warn('Failed to fetch related queries:', error);
+          // Fallback to generated suggestions on error
+          ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
+            const b=document.createElement('button');
+            b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
+            b.onclick=()=>handleQuery(b.textContent);
+            relContainer.appendChild(b);
+          });
+        }
+      })();
 
       // Insert to bottom (chat-like behavior - newest at bottom)
       summaryView.append(section);
 
       // Get summary element
       const answerEl=section.querySelector('[data-summary]');
+
+      // Store sources for this section
+      let sectionSources = [];
 
       // Toolbar: open summary panel
       const summaryBtn=section.querySelector('[data-summary-btn]');
@@ -519,10 +1125,21 @@
 
       // Toolbar: open sources panel
       const sourceBtn=section.querySelector('[data-sources-btn]');
-      sourceBtn.addEventListener('click',()=>sourcePanel.classList.toggle('active'));
+      sourceBtn.addEventListener('click',()=>{
+        // Display sources in the panel
+        displaySources(sectionSources);
+        sourcePanel.classList.toggle('active');
+      });
 
-      // Replace skeleton with final summary
-      setTimeout(()=>{ fillSummary(answerEl, query); }, 800);
+      // Start fetching immediately (typing indicator already showing)
+      (async ()=>{
+        sectionSources = await fillSummary(answerEl, query);
+        // Update sources button count
+        const sourcesSpan = sourceBtn.querySelector('span');
+        if(sourcesSpan){
+          sourcesSpan.textContent = `${sectionSources.length} 來源`;
+        }
+      })();
 
       // icons
       if(window.lucide){ lucide.createIcons(); }
@@ -570,6 +1187,139 @@
       handleQuery(query);
       q2.value='';
     });
+
+    // Navigation buttons and modals
+    aboutBtn.addEventListener('click',()=>{
+      aboutPanel.classList.add('active');
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    closeAbout.addEventListener('click',()=>{
+      aboutPanel.classList.remove('active');
+    });
+
+    loginBtn.addEventListener('click',()=>{
+      loginPanel.classList.add('active');
+      registerPanel.classList.remove('active');
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    closeLogin.addEventListener('click',()=>{
+      loginPanel.classList.remove('active');
+    });
+
+    switchToRegister.addEventListener('click',()=>{
+      loginPanel.classList.remove('active');
+      registerPanel.classList.add('active');
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    backToLogin.addEventListener('click',()=>{
+      registerPanel.classList.remove('active');
+      loginPanel.classList.add('active');
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    closeRegister.addEventListener('click',()=>{
+      registerPanel.classList.remove('active');
+    });
+
+    userMenuBtn.addEventListener('click',()=>{
+      if(userMenu.style.display==='none') return;
+      userDropdown.style.display=userDropdown.style.display==='block'?'none':'block';
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    document.addEventListener('click',e=>{
+      if(!userMenu.contains(e.target)){
+        userDropdown.style.display='none';
+      }
+    });
+
+    journeyMenuBtn.addEventListener('click',()=>{
+      journeyPanel.classList.add('active');
+      journeyBackdrop.classList.add('active');
+      userDropdown.style.display='none';
+      if(window.lucide){ lucide.createIcons(); }
+    });
+
+    closeJourney.addEventListener('click',()=>{
+      journeyPanel.classList.remove('active');
+      journeyBackdrop.classList.remove('active');
+    });
+
+    journeyBackdrop.addEventListener('click',()=>{
+      journeyPanel.classList.remove('active');
+      journeyBackdrop.classList.remove('active');
+    });
+
+    logoutBtn.addEventListener('click',()=>{
+      logout();
+      alert('您已登出');
+    });
+
+    loginFormEl.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const email=document.getElementById('loginEmail').value.trim();
+      const password=document.getElementById('loginPassword').value;
+      const success=await login(email,password);
+      if(success){
+        loginPanel.classList.remove('active');
+        loginFormEl.reset();
+        alert(`登入成功，歡迎 ${currentUser.full_name||currentUser.email}`);
+      }
+    });
+
+    registerFormEl.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const email=document.getElementById('registerEmail').value.trim();
+      const password=document.getElementById('registerPassword').value;
+      const fullName=document.getElementById('registerFullName').value.trim();
+      const studentId=document.getElementById('registerStudentId').value.trim();
+
+      const originalText=registerSubmit.textContent;
+      registerSubmit.disabled=true;
+      registerSubmit.textContent='註冊中...';
+
+      try{
+        const result=await registerUser(email,password,fullName,studentId||null);
+        alert(result.message||'註冊成功，請驗證您的電子郵件。');
+        registerFormEl.reset();
+        registerPanel.classList.remove('active');
+        loginPanel.classList.add('active');
+        if(window.lucide){ lucide.createIcons(); }
+      }catch(error){
+        alert(error.message);
+      }finally{
+        registerSubmit.disabled=false;
+        registerSubmit.textContent=originalText;
+      }
+    });
+
+    // Function to update both toggle buttons
+    function updateRetrievalModeUI(){
+      retrievalModeCheckbox.checked=retrievalMode;
+      retrievalModeCheckbox2.checked=retrievalMode;
+      const labelText=retrievalMode?'檢索模式 ON':'檢索模式';
+      retrievalModeLabel.textContent=labelText;
+      retrievalModeLabel2.textContent=labelText;
+      console.log('Retrieval mode:', retrievalMode ? 'ON (/retrieve)' : 'OFF (/query)');
+    }
+
+    // Retrieval mode toggle handlers (sync both buttons)
+    retrievalModeToggle.addEventListener('click',()=>{
+      retrievalMode=!retrievalMode;
+      updateRetrievalModeUI();
+    });
+
+    retrievalModeToggle2.addEventListener('click',()=>{
+      retrievalMode=!retrievalMode;
+      updateRetrievalModeUI();
+    });
+
+    // Initialize auth state
+    initAuth();
+    if(window.lucide){ lucide.createIcons(); }
 
     // Panel close handlers
     closeSource.addEventListener('click',()=>sourcePanel.classList.remove('active'));

@@ -6,7 +6,7 @@ from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.embeddings import Embeddings
 import logging
 from config import settings
-from ollama_embeddings import OllamaEmbeddings
+from stapi_embeddings import STAPIEmbeddings
 from dashscope_embeddings import DashScopeEmbeddings
 
 logger = logging.getLogger(__name__)
@@ -190,12 +190,12 @@ class EmbeddingFactory:
 
         elif provider == "ollama":
             if not settings.ollama_base_url:
-                raise ValueError("Ollama base URL not found in settings")
+                raise ValueError("STAPI/Ollama base URL not found in settings")
 
-            logger.info(f"Using Ollama embeddings from {settings.ollama_base_url} with {settings.ollama_max_workers} workers")
-            return OllamaEmbeddings(
+            logger.info(f"Using STAPI embeddings from {settings.ollama_base_url} with {settings.ollama_max_workers} workers")
+            return STAPIEmbeddings(
                 base_url=settings.ollama_base_url,
-                model=model or "bge-m3",
+                model=model or "BAAI/bge-large-zh-v1.5",
                 api_key=settings.ollama_api_key,
                 max_workers=settings.ollama_max_workers
             )

@@ -112,9 +112,10 @@ Design: Modern gradient UI (purple theme), responsive layout, smooth animations
    - Batch document upload
    - Similarity search
 
-4. **llm_factory.py** - Factory pattern for LLM and embedding creation
-   - Supports: OpenAI, DeepSeek, Google Gemini, DashScope, Custom
-   - HuggingFace sentence-transformers for embeddings
+4. **llm_factory.py / stapi_embeddings.py** - Factory pattern for LLM and embedding creation
+   - LLMs: OpenAI, DeepSeek, Google Gemini, DashScope, Custom
+   - Embeddings: STAPI, DashScope, OpenAI, Google, HuggingFace
+   - STAPIEmbeddings supports both STAPI and Ollama native APIs
 
 5. **rag_pipeline.py / rag_pipeline_v2.py** - RAG orchestration
    - Document retrieval
@@ -152,13 +153,28 @@ docker run -p 6333:6333 qdrant/qdrant
 ```bash
 # IMPORTANT: Run this BEFORE starting the server for the first time
 # This generates embeddings and populates Qdrant (takes ~15-20 minutes)
-python dashscope_init.py
+
+# Recommended: Initialize all collections at once
+python init_collections.py all
+
+# Or initialize separately:
+python init_collections.py main  # Main document collection
+python init_collections.py faq   # FAQ collection for query recommendations
+
+# Test with limited data first:
+python init_collections.py faq --limit 100
 
 # The script will:
-# - Load 1,067 text chunks from chunks/text_chunks.jsonl
-# - Generate DashScope embeddings (text-embedding-v4, 1024-dim)
-# - Upload vectors to Qdrant collection 'ddm_rag'
+# - Automatically use the embedding provider from .env (STAPI, DashScope, etc.)
+# - Load data from chunks/*.jsonl (main) or faq.json (faq)
+# - Generate embeddings using EmbeddingFactory
+# - Upload vectors to Qdrant collections
 # - Show progress and estimated time remaining
+
+# Legacy scripts (still work but not recommended):
+# python init_embeddings.py  # Main collection only
+# python init_faq_collection.py  # FAQ collection only
+# python dashscope_init.py  # DashScope-specific (deprecated)
 ```
 
 ### Running the Server

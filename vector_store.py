@@ -55,8 +55,8 @@ class QdrantVectorStore:
         
         points = []
         for i, (doc, embedding) in enumerate(zip(documents, embeddings)):
-            # Use integer ID for Qdrant compatibility
-            point_id = i if 'id' not in doc else str(uuid.uuid4())
+            # Use document ID if provided, otherwise use enumeration index
+            point_id = doc.get('id', i)
             
             # Ensure metadata is JSON serializable
             metadata = doc.get('metadata', {})

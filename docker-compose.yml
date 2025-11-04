@@ -18,6 +18,28 @@ services:
       retries: 3
       start_period: 10s
 
+  postgres:
+    image: postgres:15
+    container_name: ddm_postgres
+    environment:
+      POSTGRES_USER: ddm_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_this_password}
+      POSTGRES_DB: learning_journey
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddm_user -d learning_journey"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   qdrant_storage:
+    driver: local
+  postgres_data:
     driver: local

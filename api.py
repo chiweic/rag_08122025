@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal, Union
 import logging
@@ -10,6 +10,13 @@ import uuid
 from datetime import datetime
 import random
 from contextlib import asynccontextmanager
+
+# Auth imports
+from auth import (
+    register_user, login_user, verify_email,
+    get_user_profile, get_current_user,
+    UserRegister, UserLogin, EmailVerification
+)
 
 from config import settings
 from data_loader import ChunkDataLoader
@@ -37,6 +44,10 @@ audio_recommender = None
 from collections import deque
 query_history_cache = deque(maxlen=50)  # Keep last 50 queries
 last_query_cache = None  # Quick access to most recent query
+
+# Cache for summarization results (text_hash -> summary_result)
+import hashlib
+summarization_cache = {}  # Dict[str, dict] - stores summary by text hash
 
 
 # Request/Response models
@@ -153,6 +164,7 @@ class ChatCompletionResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
     # Startup
     global rag_pipeline, vector_store, is_initialized, book_recommender, query_recommender, event_recommender, audio_recommender
 
@@ -296,6 +308,9 @@ async def health_check():
         "pipeline_ready": rag_pipeline is not None,
         "qdrant_collection": None
     }
+    # model, embedding info
+    
+
 
     # Get Qdrant collection info if connected
     if vector_store:
@@ -312,6 +327,185 @@ async def health_check():
 
     return health_info
 
+
+# ============================================================================
+# Authentication Endpoints
+# ============================================================================
+
+@app.post("/auth/register")
+async def register(user: UserRegister, background_tasks: BackgroundTasks):
+    """
+    Register a new user
+
+    - **email**: Valid email address
+    - **password**: Strong password (min 8 characters)
+    - **full_name**: User's full name
+    - **ddm_student_id**: Optional DDM student ID
+    """
+    return await register_user(user, background_tasks)
+
+
+@app.post("/auth/login")
+async def login(user: UserLogin):
+    """
+    Login with email and password
+
+    Returns JWT access token
+    """
+    return await login_user(user)
+
+
+@app.post("/auth/verify-email")
+async def verify(verification: EmailVerification):
+    """
+    Verify email address with token from email (POST version)
+
+    - **token**: Verification token from email link
+    """
+    return await verify_email(verification)
+
+
+@app.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_get(token: str):
+    """
+    Verify email address via GET request (for email links)
+
+    This endpoint handles verification links from emails.
+    """
+    verification = EmailVerification(token=token)
+    result = await verify_email(verification)
+
+    # Return HTML page for better UX
+    if "message" in result and "verified successfully" in result["message"]:
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Email Verified - 佛學入門</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                    text-align: center;
+                    max-width: 500px;
+                }
+                .success-icon {
+                    font-size: 64px;
+                    color: #10b981;
+                    margin-bottom: 20px;
+                }
+                h1 {
+                    color: #1f2937;
+                    margin-bottom: 15px;
+                }
+                p {
+                    color: #6b7280;
+                    line-height: 1.6;
+                    margin-bottom: 25px;
+                }
+                .button {
+                    display: inline-block;
+                    background: linear-gradient(to right, #667eea, #764ba2);
+                    color: white;
+                    padding: 12px 30px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-weight: 500;
+                    transition: transform 0.2s;
+                }
+                .button:hover {
+                    transform: translateY(-2px);
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="success-icon">✓</div>
+                <h1>電子郵件驗證成功！</h1>
+                <p>您的帳號已成功驗證。現在您可以登入並開始使用佛學入門學習平台。</p>
+                <a href="/" class="button">前往首頁</a>
+            </div>
+        </body>
+        </html>
+        """
+    else:
+        return result
+
+
+@app.get("/auth/me")
+async def me(current_user: dict = Depends(get_current_user)):
+    """
+    Get current user profile (requires authentication)
+
+    Header: Authorization: Bearer <token>
+    """
+    return await get_user_profile(current_user)
+
+
+# ============================================================================
+# FAQ Endpoints
+# ============================================================================
+
+# Load FAQ questions on startup
+faq_questions = []
+try:
+    import json
+    with open('faq.json', 'r', encoding='utf-8') as f:
+        faq_data = json.load(f)
+        faq_questions = faq_data.get('questions', [])
+    logger.info(f"Loaded {len(faq_questions)} FAQ questions")
+except Exception as e:
+    logger.warning(f"Failed to load FAQ questions: {e}")
+
+
+@app.get("/faq")
+async def get_faq(
+    limit: Optional[int] = 5,
+    random_sample: Optional[bool] = True,
+    offset: Optional[int] = 0
+):
+    """
+    Get FAQ questions from the Buddhist dataset
+
+    - **limit**: Number of questions to return (default: 5)
+    - **random_sample**: Return random questions (default: True)
+    - **offset**: Starting offset for sequential access (default: 0)
+    """
+    if not faq_questions:
+        raise HTTPException(status_code=500, detail="FAQ questions not loaded")
+
+    if random_sample:
+        # Return random sample
+        sample_size = min(limit, len(faq_questions))
+        selected = random.sample(faq_questions, sample_size)
+    else:
+        # Return sequential questions with offset
+        start = offset
+        end = min(offset + limit, len(faq_questions))
+        selected = faq_questions[start:end]
+
+    return {
+        "questions": selected,
+        "total_count": len(faq_questions),
+        "returned_count": len(selected)
+    }
+
+
+# ============================================================================
+# RAG Endpoints
+# ============================================================================
 
 @app.post("/query")
 async def query_rag(request: QueryRequest):
@@ -941,16 +1135,16 @@ async def translate_text(request: TranslationRequest):
 
 @app.post("/summarize")
 async def summarize_text(request: SummarizationRequest):
-    """Summarize text into key points using LLM."""
+    """Summarize text into key points using LLM with caching."""
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
             detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
         )
-    
+
     try:
-        global last_query_cache
-        
+        global last_query_cache, summarization_cache
+
         # Check if we have cached query result to summarize
         if not last_query_cache or not last_query_cache.get("answer"):
             # If no cache, use the provided text
@@ -963,7 +1157,18 @@ async def summarize_text(request: SummarizationRequest):
         else:
             # Use cached answer if text not provided
             text_to_summarize = request.text if request.text else last_query_cache.get("answer")
-        
+
+        # Create hash of the text for caching
+        text_hash = hashlib.md5(text_to_summarize.encode('utf-8')).hexdigest()
+
+        # Check if summary is already cached
+        if text_hash in summarization_cache:
+            logger.info(f"Returning cached summary for text hash: {text_hash[:8]}...")
+            cached_result = summarization_cache[text_hash].copy()
+            cached_result["cached"] = True
+            cached_result["computation_time"] = 0.0  # Instant from cache
+            return cached_result
+
         # Create summarization prompt
         summarization_prompt = f"""請將以下佛教文本內容總結成要點，只用中文：
 
@@ -982,30 +1187,37 @@ async def summarize_text(request: SummarizationRequest):
 
         # Use the RAG pipeline's LLM to generate summary
         start_time = time.time()
-        
+
         # Get the LLM from rag_pipeline
         llm = rag_pipeline.llm
-        
+
         # Generate summary using the LLM
         summary = llm.invoke(summarization_prompt)
-        
+
         # Extract text from AIMessage if needed
         if hasattr(summary, 'content'):
             summary_text = summary.content
         else:
             summary_text = str(summary)
-        
+
         computation_time = time.time() - start_time
-        
-        return {
+
+        result = {
             "original_text": text_to_summarize[:200] + "..." if len(text_to_summarize) > 200 else text_to_summarize,
             "summary": summary_text,
             "max_length": request.max_length,
             "status": "success",
             "computation_time": computation_time,
-            "source": "cached_query" if not request.text and last_query_cache else "provided_text"
+            "source": "cached_query" if not request.text and last_query_cache else "provided_text",
+            "cached": False
         }
-        
+
+        # Store result in cache
+        summarization_cache[text_hash] = result.copy()
+        logger.info(f"Cached summary for text hash: {text_hash[:8]}... (cache size: {len(summarization_cache)})")
+
+        return result
+
     except HTTPException:
         raise
     except Exception as e:

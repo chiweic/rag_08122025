@@ -27,5 +27,10 @@ numpy==1.26.4
 tqdm==4.67.1
 python-multipart==0.0.18
 
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+psycopg2-binary==2.9.9
+
 # CORS support
 fastapi-cors==0.0.6

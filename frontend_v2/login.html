@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入測試 - 佛學入門 AI數位義工</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .tab-btn {
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            border-bottom-color: #14b8a6;
+            color: #14b8a6;
+            font-weight: 600;
+        }
+        .status-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        .status-success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .status-error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .status-info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass max-w-md w-full mx-4 p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">佛學入門</h1>
+            <p class="text-gray-600">AI數位義工 - 認證測試</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center border-b mb-6">
+            <button class="tab-btn active" data-tab="login">登入</button>
+            <button class="tab-btn" data-tab="register">註冊</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="tab-content">
+            <form id="loginFormElement" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+                    <input type="email" id="loginEmail" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="your@email.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+                    <input type="password" id="loginPassword" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="••••••••">
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                    登入
+                </button>
+            </form>
+
+            <div id="loginStatus" class="status-box"></div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="tab-content hidden">
+            <form id="registerFormElement" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+                    <input type="email" id="registerEmail" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="your@email.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+                    <input type="password" id="registerPassword" required minlength="8"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="至少8個字元">
+                    <p class="text-xs text-gray-500 mt-1">密碼至少需要8個字元</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+                    <input type="text" id="registerName" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="您的姓名">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">DDM學員編號（選填）</label>
+                    <input type="text" id="registerStudentId"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="例如：DDM001">
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                    註冊
+                </button>
+            </form>
+
+            <div id="registerStatus" class="status-box"></div>
+        </div>
+
+        <!-- User Info (After Login) -->
+        <div id="userInfo" class="hidden mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h3 class="font-semibold text-green-800 mb-3">✓ 登入成功</h3>
+            <div class="text-sm space-y-2 text-gray-700">
+                <p><strong>姓名：</strong><span id="userName"></span></p>
+                <p><strong>信箱：</strong><span id="userEmail"></span></p>
+                <p><strong>學員編號：</strong><span id="userStudentId"></span></p>
+                <p><strong>Email驗證：</strong><span id="userVerified"></span></p>
+                <p class="text-xs text-gray-500 mt-2">
+                    <strong>Token：</strong><span id="userToken" class="break-all"></span>
+                </p>
+            </div>
+            <button id="logoutBtn"
+                class="mt-4 w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition">
+                登出
+            </button>
+            <button id="testProtectedBtn"
+                class="mt-2 w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition">
+                測試受保護端點
+            </button>
+        </div>
+
+        <!-- API Logs -->
+        <div class="mt-6">
+            <button id="toggleLogs"
+                class="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-2">
+                <span>📋 顯示API日誌</span>
+            </button>
+            <div id="apiLogs" class="hidden mt-4 p-4 bg-gray-100 rounded-lg max-h-64 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-xs font-semibold text-gray-700">API 請求日誌</h4>
+                    <button id="clearLogs" class="text-xs text-red-600 hover:text-red-800">清除</button>
+                </div>
+                <div id="logContent" class="text-xs font-mono space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- API Status -->
+        <div class="mt-6 pt-4 border-t text-center">
+            <p class="text-xs text-gray-500">API伺服器: <span id="apiStatus" class="font-semibold">檢查中...</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // DOM Elements
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const loginFormElement = document.getElementById('loginFormElement');
+        const registerFormElement = document.getElementById('registerFormElement');
+        const loginFormDiv = document.getElementById('loginForm');
+        const registerFormDiv = document.getElementById('registerForm');
+        const userInfoDiv = document.getElementById('userInfo');
+        const apiStatusSpan = document.getElementById('apiStatus');
+        const toggleLogsBtn = document.getElementById('toggleLogs');
+        const apiLogsDiv = document.getElementById('apiLogs');
+        const logContent = document.getElementById('logContent');
+        const clearLogsBtn = document.getElementById('clearLogs');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const testProtectedBtn = document.getElementById('testProtectedBtn');
+
+        // Tab switching
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+
+                // Update active tab
+                tabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Show/hide forms
+                if (tab === 'login') {
+                    loginFormDiv.classList.remove('hidden');
+                    registerFormDiv.classList.add('hidden');
+                } else {
+                    loginFormDiv.classList.add('hidden');
+                    registerFormDiv.classList.remove('hidden');
+                }
+
+                // Clear status messages
+                clearStatus();
+            });
+        });
+
+        // Toggle logs
+        toggleLogsBtn.addEventListener('click', () => {
+            apiLogsDiv.classList.toggle('hidden');
+        });
+
+        clearLogsBtn.addEventListener('click', () => {
+            logContent.innerHTML = '';
+        });
+
+        // Utility: Log API calls
+        function logAPI(method, endpoint, status, message) {
+            const timestamp = new Date().toLocaleTimeString('zh-TW');
+            const statusColor = status === 'success' ? 'text-green-600' :
+                               status === 'error' ? 'text-red-600' : 'text-blue-600';
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'p-2 bg-white rounded border border-gray-200';
+            logEntry.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="${statusColor} font-semibold">${method}</span>
+                    <span class="text-gray-400">${timestamp}</span>
+                </div>
+                <div class="text-gray-700">${endpoint}</div>
+                <div class="text-gray-600 mt-1">${message}</div>
+            `;
+
+            logContent.insertBefore(logEntry, logContent.firstChild);
+
+            // Auto-expand logs on new entry
+            if (apiLogsDiv.classList.contains('hidden')) {
+                toggleLogsBtn.click();
+            }
+        }
+
+        // Utility: Show status message
+        function showStatus(formType, message, type) {
+            const statusDiv = document.getElementById(`${formType}Status`);
+            statusDiv.textContent = message;
+            statusDiv.className = `status-box status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function clearStatus() {
+            document.getElementById('loginStatus').style.display = 'none';
+            document.getElementById('registerStatus').style.display = 'none';
+        }
+
+        // Check API Health
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    apiStatusSpan.textContent = '✓ 運行中';
+                    apiStatusSpan.className = 'font-semibold text-green-600';
+                    logAPI('GET', '/health', 'success', `API版本: ${data.version}`);
+                } else {
+                    apiStatusSpan.textContent = '✗ 錯誤';
+                    apiStatusSpan.className = 'font-semibold text-red-600';
+                }
+            } catch (error) {
+                apiStatusSpan.textContent = '✗ 離線';
+                apiStatusSpan.className = 'font-semibold text-red-600';
+                logAPI('GET', '/health', 'error', '無法連接到API伺服器');
+            }
+        }
+
+        // Register
+        registerFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const fullName = document.getElementById('registerName').value;
+            const studentId = document.getElementById('registerStudentId').value;
+
+            showStatus('register', '註冊中...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        full_name: fullName,
+                        ddm_student_id: studentId || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('register',
+                        `✓ 註冊成功！請檢查您的信箱 ${email} 以驗證帳號。`,
+                        'success');
+                    logAPI('POST', '/auth/register', 'success',
+                        `用戶已創建: ${data.user.email}`);
+
+                    // Clear form
+                    registerFormElement.reset();
+
+                    // Switch to login tab after 3 seconds
+                    setTimeout(() => {
+                        document.querySelector('[data-tab="login"]').click();
+                    }, 3000);
+                } else {
+                    showStatus('register', `✗ 註冊失敗: ${data.detail}`, 'error');
+                    logAPI('POST', '/auth/register', 'error', data.detail);
+                }
+            } catch (error) {
+                showStatus('register', `✗ 網路錯誤: ${error.message}`, 'error');
+                logAPI('POST', '/auth/register', 'error', error.message);
+            }
+        });
+
+        // Login
+        loginFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            showStatus('login', '登入中...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store token
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showStatus('login', '✓ 登入成功！', 'success');
+                    logAPI('POST', '/auth/login', 'success',
+                        `用戶已登入: ${data.user.email}`);
+
+                    // Show user info
+                    displayUserInfo(data.user, data.access_token);
+                } else {
+                    showStatus('login', `✗ 登入失敗: ${data.detail}`, 'error');
+                    logAPI('POST', '/auth/login', 'error', data.detail);
+                }
+            } catch (error) {
+                showStatus('login', `✗ 網路錯誤: ${error.message}`, 'error');
+                logAPI('POST', '/auth/login', 'error', error.message);
+            }
+        });
+
+        // Display user info
+        function displayUserInfo(user, token) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userStudentId').textContent = user.ddm_student_id || '未設定';
+            document.getElementById('userVerified').textContent = user.email_verified ? '✓ 已驗證' : '✗ 未驗證';
+            document.getElementById('userToken').textContent = token.substring(0, 50) + '...';
+
+            // Hide forms, show user info
+            loginFormDiv.classList.add('hidden');
+            registerFormDiv.classList.add('hidden');
+            userInfoDiv.classList.remove('hidden');
+        }
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+
+            userInfoDiv.classList.add('hidden');
+            loginFormDiv.classList.remove('hidden');
+
+            showStatus('login', 'ℹ 已登出', 'info');
+            logAPI('LOCAL', 'logout', 'success', '用戶已登出');
+        });
+
+        // Test protected endpoint
+        testProtectedBtn.addEventListener('click', async () => {
+            const token = localStorage.getItem('access_token');
+
+            if (!token) {
+                alert('請先登入');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`✓ 受保護端點測試成功！\n\n姓名: ${data.full_name}\nEmail: ${data.email}\n會員時間: ${data.member_since}`);
+                    logAPI('GET', '/auth/me', 'success', '受保護端點訪問成功');
+                } else {
+                    alert(`✗ 訪問失敗: ${data.detail}`);
+                    logAPI('GET', '/auth/me', 'error', data.detail);
+                }
+            } catch (error) {
+                alert(`✗ 網路錯誤: ${error.message}`);
+                logAPI('GET', '/auth/me', 'error', error.message);
+            }
+        });
+
+        // Check if already logged in
+        function checkExistingLogin() {
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('user');
+
+            if (token && user) {
+                displayUserInfo(JSON.parse(user), token);
+            }
+        }
+
+        // Initialize
+        checkAPIHealth();
+        checkExistingLogin();
+
+        // Refresh API health every 10 seconds
+        setInterval(checkAPIHealth, 10000);
+    </script>
+</body>
+</html>
