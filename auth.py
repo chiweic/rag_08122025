@@ -44,7 +44,7 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "your-app-password")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS")
 SMTP_USE_SSL = os.getenv("SMTP_USE_SSL")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@ddm-learning.org")
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8001")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()

@@ -100,7 +100,7 @@
     #journeyBackdrop.active{opacity:1;visibility:visible;}
     #journeyPanel{position:fixed;top:0;right:-70%;width:60%;max-width:640px;height:100%;background:white;box-shadow:-6px 0 24px rgba(15,118,110,0.15);padding:2.5rem 2rem;overflow-y:auto;transition:right 0.5s cubic-bezier(0.22,1,0.36,1);z-index:60;}
     #journeyPanel.active{right:0;}
-    #aboutPanel,#loginPanel,#registerPanel{
+    #aboutPanel,#loginPanel,#registerPanel,#bookDetailPanel{
       position:fixed;
       top:-100%;
       left:50%;
@@ -115,7 +115,7 @@
       opacity:0;
       transition:top 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
     }
-    #aboutPanel.active,#loginPanel.active,#registerPanel.active{
+    #aboutPanel.active,#loginPanel.active,#registerPanel.active,#bookDetailPanel.active{
       top:50%;
       opacity:1;
     }
@@ -291,6 +291,15 @@
     </form>
   </div>
 
+  <div id="bookDetailPanel">
+    <button id="closeBookDetail" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <div id="bookDetailContent" class="space-y-4">
+      <!-- Book details will be populated here -->
+    </div>
+  </div>
+
   <div id="summaryPanel">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-semibold text-teal-700 flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5"></i>答案摘要</h2>
@@ -419,6 +428,9 @@
     const registerPanel=document.getElementById('registerPanel');
     const closeRegister=document.getElementById('closeRegister');
     const backToLogin=document.getElementById('backToLogin');
+    const bookDetailPanel=document.getElementById('bookDetailPanel');
+    const closeBookDetail=document.getElementById('closeBookDetail');
+    const bookDetailContent=document.getElementById('bookDetailContent');
     const loginFormEl=document.getElementById('loginForm');
     const registerFormEl=document.getElementById('registerForm');
     const registerSubmit=document.getElementById('registerSubmit');
@@ -524,9 +536,52 @@
     }
 
     function initAuth(){
+      // Check for email verification token in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const verificationToken = urlParams.get('token');
+
+      if (verificationToken) {
+        handleEmailVerification(verificationToken);
+        return;
+      }
+
       if(authToken){
         verifyToken();
       }else{
+        updateUIForLoggedOut();
+      }
+    }
+
+    async function handleEmailVerification(token) {
+      try {
+        // Show loading state
+        alert('正在驗證您的電子郵件...');
+
+        const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Clear the token from URL
+          window.history.replaceState({}, document.title, '/');
+
+          // Show success message
+          alert(`✅ 電子郵件驗證成功！\n\n歡迎 ${data.user.full_name}！\n\n您現在可以登入使用所有功能。`);
+
+          // Open login panel
+          loginPanel.classList.add('active');
+          if(window.lucide) lucide.createIcons();
+        } else {
+          alert(`❌ 驗證失敗：${data.detail}\n\n請檢查驗證連結是否正確或已過期。`);
+        }
+      } catch (error) {
+        console.error('Email verification error:', error);
+        alert(`❌ 驗證過程發生錯誤：${error.message}\n\n請稍後再試或聯繫客服。`);
+      } finally {
         updateUIForLoggedOut();
       }
     }
@@ -709,6 +764,87 @@
       } catch (error) {
         console.error('Error fetching events:', error);
         return [];
+      }
+    }
+
+    // Show book detail
+    async function showBookDetail(isbn, title, author, description) {
+      try {
+        // Show loading state
+        bookDetailContent.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div><p class="mt-4 text-gray-600">載入中...</p></div>';
+        bookDetailPanel.classList.add('active');
+        if(window.lucide) lucide.createIcons();
+
+        // Fetch full book details from API
+        const response = await fetch(`${API_BASE_URL}/books/${isbn}`);
+        let book;
+
+        if (!response.ok) {
+          // If API fails, use provided info
+          book = { title, author, description, isbn };
+        } else {
+          book = await response.json();
+        }
+
+        // Create a nice formatted display
+        let html = `
+          <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i data-lucide="book-open" class="w-6 h-6 text-teal-600"></i>
+            ${book.title || title}
+          </h2>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-2">
+              <i data-lucide="user" class="w-4 h-4 text-gray-500 mt-0.5"></i>
+              <div><span class="font-medium text-gray-700">作者：</span>${book.author || author}</div>
+            </div>`;
+
+        if (book.publisher) {
+          html += `<div class="flex items-start gap-2">
+            <i data-lucide="building" class="w-4 h-4 text-gray-500 mt-0.5"></i>
+            <div><span class="font-medium text-gray-700">出版社：</span>${book.publisher}</div>
+          </div>`;
+        }
+
+        if (book.publish_date) {
+          html += `<div class="flex items-start gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-gray-500 mt-0.5"></i>
+            <div><span class="font-medium text-gray-700">出版日期：</span>${book.publish_date}</div>
+          </div>`;
+        }
+
+        if (book.price) {
+          html += `<div class="flex items-start gap-2">
+            <i data-lucide="dollar-sign" class="w-4 h-4 text-gray-500 mt-0.5"></i>
+            <div><span class="font-medium text-gray-700">定價：</span>NT$ ${book.price}</div>
+          </div>`;
+        }
+
+        html += `<div class="flex items-start gap-2">
+          <i data-lucide="barcode" class="w-4 h-4 text-gray-500 mt-0.5"></i>
+          <div><span class="font-medium text-gray-700">ISBN：</span>${book.isbn || isbn}</div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <p class="text-gray-700 leading-relaxed">${book.description || book.content || description}</p>
+        </div>
+
+        ${book.url ? `<div class="mt-4"><a href="${book.url}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:shadow-lg transition-all"><i data-lucide="external-link" class="w-4 h-4"></i>前往書店</a></div>` : ''}
+      </div>`;
+
+        bookDetailContent.innerHTML = html;
+        if(window.lucide) lucide.createIcons();
+
+      } catch (error) {
+        console.error('Error fetching book details:', error);
+        bookDetailContent.innerHTML = `
+          <h2 class="text-xl font-bold text-gray-900 mb-4">${title}</h2>
+          <div class="space-y-3 text-sm text-gray-700">
+            <p><strong>作者：</strong>${author}</p>
+            <p><strong>ISBN：</strong>${isbn}</p>
+            <p class="mt-4">${description}</p>
+            <p class="mt-4 text-red-600">⚠️ 無法載入完整書籍資訊</p>
+          </div>`;
+        if(window.lucide) lucide.createIcons();
       }
     }
 
@@ -1009,7 +1145,7 @@
                   <span class="text-xs text-gray-500 flex items-center gap-1">
                     <i data-lucide="barcode" class="w-3 h-3"></i>${book.isbn}
                   </span>
-                  <button class="text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium">查看詳情</button>
+                  <button onclick="showBookDetail('${book.isbn}', '${book.title.replace(/'/g, "\\'")}', '${book.author.replace(/'/g, "\\'")}', '${book.description.replace(/'/g, "\\'").replace(/\n/g, ' ')}')" class="text-sm bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium">查看詳情</button>
                 </div>
               </div>
             </div>`;
@@ -1278,6 +1414,10 @@
 
     closeRegister.addEventListener('click',()=>{
       registerPanel.classList.remove('active');
+    });
+
+    closeBookDetail.addEventListener('click',()=>{
+      bookDetailPanel.classList.remove('active');
     });
 
     userMenuBtn.addEventListener('click',()=>{
