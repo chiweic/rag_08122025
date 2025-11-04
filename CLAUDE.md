@@ -172,9 +172,9 @@ python init_collections.py faq --limit 100
 # - Show progress and estimated time remaining
 
 # Legacy scripts (still work but not recommended):
-# python init_embeddings.py  # Main collection only
-# python init_faq_collection.py  # FAQ collection only
-# python dashscope_init.py  # DashScope-specific (deprecated)
+# python init_collections.py main  # Main collection only
+# python init_collections.py faq  # FAQ collection only
+# python init_collections.py all  # All collections at once
 ```
 
 ### Running the Server

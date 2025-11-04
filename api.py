@@ -231,7 +231,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Failed to initialize server: {e}")
         logger.error("Please ensure Qdrant is running and the collection exists.")
-        logger.error("Run 'python dashscope_init.py' to initialize the vector database.")
+        logger.error("Run 'python init_collections.py all' to initialize the vector database.")
         is_initialized = False
 
     yield
@@ -259,14 +259,20 @@ app.add_middleware(
 
 # Mount static files for frontend
 import os
-if os.path.exists("frontend"):
+# Use frontend_v2 (modern UI with Perplexity-style interface)
+if os.path.exists("frontend_v2"):
+    app.mount("/static", StaticFiles(directory="frontend_v2"), name="static")
+elif os.path.exists("frontend"):
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 
 @app.get("/")
 async def root():
     """Redirect to frontend."""
-    if os.path.exists("frontend/index.html"):
+    # Prefer frontend_v2 if available
+    if os.path.exists("frontend_v2/index.html"):
+        return FileResponse("frontend_v2/index.html")
+    elif os.path.exists("frontend/index.html"):
         return FileResponse("frontend/index.html")
     return {"message": "DDM RAG System API", "docs": "/docs"}
 
@@ -513,7 +519,7 @@ async def query_rag(request: QueryRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -549,7 +555,7 @@ async def retrieve_documents(request: RetrievalRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -576,7 +582,7 @@ async def synthesize_answer(request: SynthesisRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -602,7 +608,7 @@ async def chat_completions(request: ChatCompletionRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -683,7 +689,7 @@ async def stream_rag(request: QueryRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -757,7 +763,7 @@ async def update_configuration(request: ConfigUpdateRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -1114,7 +1120,7 @@ async def translate_text(request: TranslationRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -1139,7 +1145,7 @@ async def summarize_text(request: SummarizationRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
 
     try:
@@ -1241,7 +1247,7 @@ async def generate_quiz(request: QuizRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:
@@ -1353,7 +1359,7 @@ async def evaluate_quiz_answers(request: QuizAnswerRequest):
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
-            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python dashscope_init.py' if needed."
+            detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
     
     try:

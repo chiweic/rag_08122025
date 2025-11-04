@@ -33,7 +33,7 @@ class QueryRecommender:
                 if collection_info:
                     logger.info(f"Query recommender initialized with FAQ collection '{faq_collection_name}' ({collection_info['points_count']} questions)")
                 else:
-                    logger.warning(f"FAQ collection '{faq_collection_name}' not found. Please run init_faq_collection.py first.")
+                    logger.warning(f"FAQ collection '{faq_collection_name}' not found. Please run init_collections.py faq first.")
                     self.faq_vector_store = None
             except Exception as e:
                 logger.warning(f"FAQ collection '{faq_collection_name}' not available: {e}")

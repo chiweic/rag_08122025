@@ -4,7 +4,8 @@ from typing import Optional, Literal
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Force reload .env with override=True to ensure latest values are used
+load_dotenv(override=True)
 
 
 class Settings(BaseSettings):

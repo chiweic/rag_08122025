@@ -21,6 +21,7 @@ import json
 import sys
 import glob
 import argparse
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from qdrant_client import QdrantClient
@@ -188,8 +189,17 @@ def upload_to_qdrant(client, collection_name, documents, embeddings, upload_batc
         # Create points
         points = []
         for doc, emb in zip(batch_docs, batch_embs):
+            # Use deterministic hash for string IDs (MD5 to avoid session-dependent hash())
+            if isinstance(doc["id"], int):
+                point_id = doc["id"]
+            else:
+                # MD5 hash is deterministic across sessions
+                hash_digest = hashlib.md5(str(doc["id"]).encode('utf-8')).hexdigest()
+                # Convert first 8 hex chars to int (32-bit positive integer)
+                point_id = int(hash_digest[:8], 16)
+
             point = PointStruct(
-                id=doc["id"] if isinstance(doc["id"], int) else hash(doc["id"]) % (2**31),
+                id=point_id,
                 vector=emb,
                 payload={
                     "text": doc["text"],

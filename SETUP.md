@@ -205,7 +205,7 @@ chmod +x dashscope_init.py
 source venv/bin/activate
 
 # Run initialization (will take 5-15 minutes)
-python dashscope_init.py 2>&1 | tee dashscope_init.json
+python init_collections.py all 2>&1 | tee dashscope_init.json
 ```
 
 **What this does:**
@@ -445,7 +445,7 @@ docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
 **Solution:**
 ```bash
 # Re-run embedding initialization
-python dashscope_init.py
+python init_collections.py all
 ```
 
 ### Issue: "DashScope API key invalid"
@@ -483,7 +483,7 @@ API_PORT=8001
 ### Issue: Query returns empty or "nothing"
 
 **Possible causes:**
-1. **Embeddings not initialized**: Run `python dashscope_init.py`
+1. **Embeddings not initialized**: Run `python init_collections.py all`
 2. **Qdrant not running**: Check `docker ps | grep qdrant`
 3. **LLM provider issue**: Check API keys in `.env`
 4. **Streaming timeout**: Switch to non-streaming mode or verify organization (for OpenAI)
@@ -623,7 +623,7 @@ docker exec qdrant tar czf /qdrant/backup.tar.gz /qdrant/storage
 # 3. Start Qdrant
 
 # Re-initialize embeddings (if needed)
-python dashscope_init.py
+python init_collections.py all
 
 # Test query
 curl -X POST http://localhost:8000/query \
@@ -649,7 +649,7 @@ curl -X POST http://localhost:8000/query \
 - [ ] Install dependencies (`pip install -r requirements.txt`)
 - [ ] Configure `.env` with DashScope API key
 - [ ] Start Qdrant (`docker run -d -p 6333:6333 qdrant/qdrant`)
-- [ ] Run embedding initialization (`python dashscope_init.py`)
+- [ ] Run embedding initialization (`python init_collections.py all`)
 - [ ] Verify Qdrant has 3,564 points
 - [ ] Start server (`python main.py`)
 - [ ] Test health endpoint

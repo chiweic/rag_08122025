@@ -1067,16 +1067,34 @@
 
             // Use real related queries if available
             if(data.related_queries && data.related_queries.length > 0){
+              // Remove duplicates by tracking seen questions
+              const seenQuestions = new Set();
+
               data.related_queries.forEach(relQuery=>{
-                const b=document.createElement('button');
-                b.type='button'; b.className='related-btn';
                 // Handle different response formats
                 const queryText = typeof relQuery === 'string' ? relQuery :
-                                 (relQuery.query || relQuery.text || JSON.stringify(relQuery));
+                                 (relQuery.text || relQuery.query || JSON.stringify(relQuery));
+
+                // Skip duplicates
+                if(seenQuestions.has(queryText)) return;
+                seenQuestions.add(queryText);
+
+                const b=document.createElement('button');
+                b.type='button'; b.className='related-btn';
                 b.textContent=queryText;
                 b.onclick=()=>handleQuery(queryText);
                 relContainer.appendChild(b);
               });
+
+              // If no unique questions after deduplication, show fallback
+              if(seenQuestions.size === 0){
+                ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
+                  const b=document.createElement('button');
+                  b.type='button'; b.className='related-btn'; b.textContent=`${query}：${t}`;
+                  b.onclick=()=>handleQuery(b.textContent);
+                  relContainer.appendChild(b);
+                });
+              }
             } else {
               // Fallback to generated suggestions if no related queries
               ['概念解釋','使用方法','相似主題','延伸閱讀','常見誤解'].forEach(t=>{
