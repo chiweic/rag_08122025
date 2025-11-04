@@ -3,6 +3,10 @@ Authentication module for DDM Learning Journey System
 Handles user registration, login, email verification, and JWT tokens
 """
 
+# Suppress passlib bcrypt version warning (compatibility with bcrypt 4.x+)
+import logging
+logging.getLogger('passlib').setLevel(logging.ERROR)
+
 from fastapi import Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
@@ -82,11 +86,19 @@ class User(BaseModel):
 # ============================================================================
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
+    """Hash a password using bcrypt (max 72 bytes due to bcrypt limitation)"""
+    # Bcrypt has a 72-byte password limit, truncate if necessary
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
+    """Verify a password against its hash (truncated to 72 bytes for bcrypt)"""
+    # Apply same truncation as hash_password for consistency
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
     return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict) -> str:

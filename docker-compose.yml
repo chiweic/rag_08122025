@@ -23,7 +23,7 @@ services:
     container_name: ddm_postgres
     environment:
       POSTGRES_USER: ddm_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_this_password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: learning_journey
     ports:
       - "5432:5432"

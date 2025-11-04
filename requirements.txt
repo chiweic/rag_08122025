@@ -30,6 +30,7 @@ python-multipart==0.0.18
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt>=4.0.0,<5.0.0  # passlib 1.7.4 incompatible with bcrypt 5.x
 psycopg2-binary==2.9.9
 
 # CORS support
