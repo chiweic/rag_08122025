@@ -138,3 +138,6 @@ backup/
 
 # System files
 .localized
+
+# backup on organization of code base
+backup_deprecated/

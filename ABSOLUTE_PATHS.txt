@@ -1,0 +1,172 @@
+==============================================================================
+ABSOLUTE FILE PATHS - DDM RAG SYSTEM
+==============================================================================
+
+CRITICAL CORE FILES (KEEP):
+/home/chiweic/repo/rag_08122025/main.py
+/home/chiweic/repo/rag_08122025/api.py
+/home/chiweic/repo/rag_08122025/config.py
+/home/chiweic/repo/rag_08122025/vector_store.py
+/home/chiweic/repo/rag_08122025/rag_pipeline.py
+/home/chiweic/repo/rag_08122025/llm_factory.py
+/home/chiweic/repo/rag_08122025/data_loader.py
+/home/chiweic/repo/rag_08122025/stapi_embeddings.py
+/home/chiweic/repo/rag_08122025/init_collections.py
+
+RECOMMENDATION ENGINES (KEEP):
+/home/chiweic/repo/rag_08122025/book_recommender.py
+/home/chiweic/repo/rag_08122025/query_recommender.py
+/home/chiweic/repo/rag_08122025/event_recommender.py
+/home/chiweic/repo/rag_08122025/audio_recommender.py
+
+OPTIONAL AUTHENTICATION (KEEP):
+/home/chiweic/repo/rag_08122025/auth.py
+
+==============================================================================
+DEPRECATED _V2 FILES (SAFE TO DELETE):
+/home/chiweic/repo/rag_08122025/api_v2.py
+/home/chiweic/repo/rag_08122025/main_v2.py
+/home/chiweic/repo/rag_08122025/rag_pipeline_v2.py
+/home/chiweic/repo/rag_08122025/vector_store_v2.py
+/home/chiweic/repo/rag_08122025/data_loader_v2.py
+/home/chiweic/repo/rag_08122025/test_multi_collection.py
+
+==============================================================================
+LEGACY FRONTEND (SAFE TO DELETE - ENTIRE DIRECTORY):
+/home/chiweic/repo/rag_08122025/frontend/
+  /home/chiweic/repo/rag_08122025/frontend/index.html
+  /home/chiweic/repo/rag_08122025/frontend/app.js
+  /home/chiweic/repo/rag_08122025/frontend/debug.html
+  /home/chiweic/repo/rag_08122025/frontend/debug-init.html
+  /home/chiweic/repo/rag_08122025/frontend/test-basic.html
+
+==============================================================================
+ACTIVE FRONTEND (KEEP):
+/home/chiweic/repo/rag_08122025/frontend_v2/
+  /home/chiweic/repo/rag_08122025/frontend_v2/index.html
+  /home/chiweic/repo/rag_08122025/frontend_v2/login.html
+
+==============================================================================
+DATA FILES (KEEP):
+/home/chiweic/repo/rag_08122025/chunks/
+  /home/chiweic/repo/rag_08122025/chunks/text_chunks.jsonl
+  /home/chiweic/repo/rag_08122025/chunks/audio_chunks.jsonl
+  /home/chiweic/repo/rag_08122025/chunks/event_chunks.jsonl
+
+/home/chiweic/repo/rag_08122025/ddm_books.json
+/home/chiweic/repo/rag_08122025/events.json
+/home/chiweic/repo/rag_08122025/faq.json
+/home/chiweic/repo/rag_08122025/processed_audios.json
+/home/chiweic/repo/rag_08122025/processed_videos.json
+
+==============================================================================
+CONFIGURATION FILES (KEEP):
+/home/chiweic/repo/rag_08122025/.env
+/home/chiweic/repo/rag_08122025/config.py
+/home/chiweic/repo/rag_08122025/docker-compose.yml
+
+==============================================================================
+TEST REPORT FILES (SAFE TO DELETE):
+/home/chiweic/repo/rag_08122025/init_result.json
+/home/chiweic/repo/rag_08122025/init_retry.json
+/home/chiweic/repo/rag_08122025/ollama_init.json
+/home/chiweic/repo/rag_08122025/ollama_parallel_init.json
+/home/chiweic/repo/rag_08122025/dashscope_init.json
+/home/chiweic/repo/rag_08122025/audio_recommendation_test_report.json
+/home/chiweic/repo/rag_08122025/book_recommendation_test_report.json
+/home/chiweic/repo/rag_08122025/event_recommendation_test_report.json
+/home/chiweic/repo/rag_08122025/query_pipeline_test_report.json
+/home/chiweic/repo/rag_08122025/retrieval_test_report.json
+/home/chiweic/repo/rag_08122025/events_20250730_124843.jsonl
+/home/chiweic/repo/rag_08122025/failed_upload_points.json
+/home/chiweic/repo/rag_08122025/embedding_config.json
+
+==============================================================================
+LOG FILES (SAFE TO DELETE - 10+ files):
+/home/chiweic/repo/rag_08122025/*.log
+Includes: bge_*.log, init_*.log, ollama_*.log, server_*.log, test_*.log
+
+==============================================================================
+OBSOLETE UTILITY SCRIPTS (SAFE TO DELETE):
+/home/chiweic/repo/rag_08122025/ollama_parallel_init.py
+/home/chiweic/repo/rag_08122025/convert_events.py
+/home/chiweic/repo/rag_08122025/reorganize_chunks.py
+/home/chiweic/repo/rag_08122025/fix_text_chunks.py
+/home/chiweic/repo/rag_08122025/start_localized.py
+/home/chiweic/repo/rag_08122025/audio_ingester.py
+
+==============================================================================
+TEST FILES (OPTIONAL - Review before deleting):
+ACTIVE (Recent):
+/home/chiweic/repo/rag_08122025/test_stapi_embeddings.py
+/home/chiweic/repo/rag_08122025/test_config_embeddings.py
+/home/chiweic/repo/rag_08122025/test_auth.py
+/home/chiweic/repo/rag_08122025/test_api_server.py
+
+OLDER (Still executable):
+/home/chiweic/repo/rag_08122025/test_query_pipeline.py
+/home/chiweic/repo/rag_08122025/test_book_recommendations.py
+/home/chiweic/repo/rag_08122025/test_audio_recommendations.py
+/home/chiweic/repo/rag_08122025/test_event_recommendations.py
+/home/chiweic/repo/rag_08122025/test_retrieval_accuracy.py
+/home/chiweic/repo/rag_08122025/test_gpu_embedding.py
+/home/chiweic/repo/rag_08122025/quick_test_retrieval.py
+
+==============================================================================
+SHELL SCRIPTS (MOSTLY ACTIVE):
+ACTIVE:
+/home/chiweic/repo/rag_08122025/start_qdrant.sh
+/home/chiweic/repo/rag_08122025/check_setup.sh
+
+OPTIONAL:
+/home/chiweic/repo/rag_08122025/check_progress.sh
+/home/chiweic/repo/rag_08122025/monitor_progress.sh
+/home/chiweic/repo/rag_08122025/monitor_init.sh
+/home/chiweic/repo/rag_08122025/monitor_all_batches.sh
+/home/chiweic/repo/rag_08122025/install_docker.sh
+
+==============================================================================
+DOCUMENTATION (KEEP - REFERENCE):
+/home/chiweic/repo/rag_08122025/README.md
+/home/chiweic/repo/rag_08122025/CLAUDE.md
+/home/chiweic/repo/rag_08122025/SETUP.md
+/home/chiweic/repo/rag_08122025/EMBEDDING_INIT_GUIDE.md
+/home/chiweic/repo/rag_08122025/STAPI_INTEGRATION_STATUS.md
+/home/chiweic/repo/rag_08122025/STAPI_MIGRATION.md
+/home/chiweic/repo/rag_08122025/SCRIPT_CLEANUP.md
+/home/chiweic/repo/rag_08122025/HASH_COLLISION_FIX.md
+/home/chiweic/repo/rag_08122025/AUTH_IMPLEMENTATION_PLAN.md
+/home/chiweic/repo/rag_08122025/AUTH_SETUP.md
+/home/chiweic/repo/rag_08122025/AUTH_CHECKLIST.md
+/home/chiweic/repo/rag_08122025/TESTING.md
+/home/chiweic/repo/rag_08122025/TEST_AUTH_GUIDE.md
+/home/chiweic/repo/rag_08122025/DOCKER.md
+/home/chiweic/repo/rag_08122025/FRONTEND_ACCESS.md
+/home/chiweic/repo/rag_08122025/SERVER_SETUP.md
+/home/chiweic/repo/rag_08122025/STARTUP.md
+/home/chiweic/repo/rag_08122025/AGENTS.md
+/home/chiweic/repo/rag_08122025/presentation_outline.md
+/home/chiweic/repo/rag_08122025/presentation_outline_zh_tw.md
+
+NEW INVENTORY DOCUMENTATION:
+/home/chiweic/repo/rag_08122025/FILE_INVENTORY.md (17KB - Comprehensive)
+/home/chiweic/repo/rag_08122025/QUICK_REFERENCE.md (6.3KB - Quick Guide)
+/home/chiweic/repo/rag_08122025/ABSOLUTE_PATHS.txt (This file)
+
+==============================================================================
+SPECIAL DIRECTORIES:
+/home/chiweic/repo/rag_08122025/auth_standalone/ (Standalone auth - design only)
+/home/chiweic/repo/rag_08122025/scripts/ (Utilities - mostly test_smtp.py)
+/home/chiweic/repo/rag_08122025/qdrant_storage/ (Qdrant DB - git ignored)
+/home/chiweic/repo/rag_08122025/.git/ (Git repository)
+/home/chiweic/repo/rag_08122025/venv/ (Python virtual environment - git ignored)
+
+==============================================================================
+REQUIREMENTS:
+/home/chiweic/repo/rag_08122025/requirements.txt (KEEP)
+/home/chiweic/repo/rag_08122025/env.example (KEEP - Reference)
+/home/chiweic/repo/rag_08122025/.gitignore (KEEP)
+
+==============================================================================
+END OF ABSOLUTE PATHS FILE
+==============================================================================
