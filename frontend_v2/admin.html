@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console - DDM RAG Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .stat-card { transition: all 0.3s ease; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .refresh-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    .chart-container { position: relative; height: 300px; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <i data-lucide="bar-chart-3" class="w-8 h-8"></i>
+          <div>
+            <h1 class="text-2xl font-bold">DDM RAG Admin Console</h1>
+            <p class="text-sm text-purple-100">Real-time Analytics Dashboard</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right text-sm">
+            <div class="text-purple-100">Last Update</div>
+            <div id="lastUpdate" class="font-mono">--:--:--</div>
+          </div>
+          <button id="refreshBtn" class="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-6 py-8">
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Total Queries (24h)</p>
+            <p id="totalQueries" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-lg">
+            <i data-lucide="message-square" class="w-6 h-6 text-blue-600"></i>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm">
+          <span class="text-green-600 font-medium" id="queriesTrend">+0%</span>
+          <span class="text-gray-500 ml-2">vs yesterday</span>
+        </div>
+      </div>
+
+      <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Unique Users (24h)</p>
+            <p id="uniqueUsers" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+          </div>
+          <div class="bg-purple-100 p-3 rounded-lg">
+            <i data-lucide="users" class="w-6 h-6 text-purple-600"></i>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm">
+          <span id="authenticatedUsers" class="text-gray-700 font-medium">0</span>
+          <span class="text-gray-500 ml-2">authenticated</span>
+        </div>
+      </div>
+
+      <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Avg Response Time</p>
+            <p id="avgResponseTime" class="text-3xl font-bold text-gray-800 mt-2">0s</p>
+          </div>
+          <div class="bg-green-100 p-3 rounded-lg">
+            <i data-lucide="zap" class="w-6 h-6 text-green-600"></i>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm">
+          <span class="text-gray-500">From query logs</span>
+        </div>
+      </div>
+
+      <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Active Now</p>
+            <p id="activeNow" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+          </div>
+          <div class="bg-orange-100 p-3 rounded-lg">
+            <i data-lucide="activity" class="w-6 h-6 text-orange-600"></i>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm">
+          <span class="text-gray-500">Last 15 minutes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Hourly Queries Chart -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-5 h-5 text-blue-600"></i>
+            Hourly Query Activity (24h)
+          </h2>
+          <button id="toggleChartType" class="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:bg-gray-50">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 inline"></i>
+          </button>
+        </div>
+        <div class="chart-container">
+          <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- User Distribution Chart -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i data-lucide="pie-chart" class="w-5 h-5 text-purple-600"></i>
+          User Type Distribution (24h)
+        </h2>
+        <div class="chart-container">
+          <canvas id="userChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-Day Trend Chart -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <i data-lucide="calendar" class="w-5 h-5 text-green-600"></i>
+        7-Day Query Trend
+      </h2>
+      <div class="chart-container" style="height: 250px;">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Geographic Distribution -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Country Distribution -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i data-lucide="globe" class="w-5 h-5 text-indigo-600"></i>
+          Geographic Distribution (24h)
+        </h2>
+        <div class="h-64">
+          <canvas id="locationChart"></canvas>
+        </div>
+      </div>
+
+      <!-- IP Details -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i data-lucide="map-pin" class="w-5 h-5 text-red-600"></i>
+          Recent IP Locations
+        </h2>
+        <div id="ipDetailsList" class="space-y-2 max-h-96 overflow-y-auto">
+          <div class="text-center text-gray-500 py-4">
+            <i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+            <p class="text-sm">Loading IP data...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Queries Table -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <i data-lucide="list" class="w-5 h-5 text-orange-600"></i>
+        Recent Queries (Last 20)
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sources</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            </tr>
+          </thead>
+          <tbody id="recentQueriesTable" class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                <i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+                <div>Loading data...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Use current origin for API calls (works with localhost and api.changpt.org)
+    const API_BASE_URL = window.location.origin;
+    let hourlyChart, userChart, weeklyChart, locationChart;
+    let currentChartType = 'line';
+    let autoRefreshInterval;
+
+    // Initialize charts
+    function initCharts() {
+      // Hourly Queries Chart
+      const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+      hourlyChart = new Chart(hourlyCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Queries',
+            data: [],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+
+      // User Distribution Chart
+      const userCtx = document.getElementById('userChart').getContext('2d');
+      userChart = new Chart(userCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Authenticated', 'Anonymous'],
+          datasets: [{
+            data: [0, 0],
+            backgroundColor: [
+              'rgba(147, 51, 234, 0.8)',
+              'rgba(203, 213, 225, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // Weekly Trend Chart
+      const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+      weeklyChart = new Chart(weeklyCtx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Total Queries',
+              data: [],
+              backgroundColor: 'rgba(34, 197, 94, 0.7)',
+              borderColor: 'rgb(34, 197, 94)',
+              borderWidth: 1
+            },
+            {
+              label: 'Unique Users',
+              data: [],
+              backgroundColor: 'rgba(168, 85, 247, 0.7)',
+              borderColor: 'rgb(168, 85, 247)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+      // Location Distribution Pie Chart
+      const locationCtx = document.getElementById('locationChart').getContext('2d');
+      locationChart = new Chart(locationCtx, {
+        type: 'pie',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',   // Blue
+              'rgba(147, 51, 234, 0.8)',   // Purple
+              'rgba(34, 197, 94, 0.8)',    // Green
+              'rgba(249, 115, 22, 0.8)',   // Orange
+              'rgba(239, 68, 68, 0.8)',    // Red
+              'rgba(14, 165, 233, 0.8)',   // Sky
+              'rgba(168, 85, 247, 0.8)',   // Violet
+              'rgba(234, 179, 8, 0.8)',    // Yellow
+              'rgba(236, 72, 153, 0.8)',   // Pink
+              'rgba(6, 182, 212, 0.8)'     // Cyan
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                padding: 10,
+                font: { size: 12 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${label}: ${value} queries (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Load real-time data
+    async function loadRealtimeData() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/analytics/realtime`, {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        // Update summary stats
+        document.getElementById('totalQueries').textContent = data.summary.total_queries;
+        document.getElementById('uniqueUsers').textContent = data.summary.unique_users;
+        document.getElementById('authenticatedUsers').textContent = data.summary.authenticated_users;
+
+        // Calculate avg response time
+        const avgTime = data.recent_queries.length > 0
+          ? (data.recent_queries.reduce((sum, q) => sum + q.computation_time, 0) / data.recent_queries.length).toFixed(2)
+          : 0;
+        document.getElementById('avgResponseTime').textContent = avgTime + 's';
+
+        // Calculate active now (queries in last 15 min)
+        const now = new Date();
+        const fifteenMinAgo = new Date(now - 15 * 60 * 1000);
+        const activeCount = data.recent_queries.filter(q =>
+          new Date(q.timestamp) > fifteenMinAgo
+        ).length;
+        document.getElementById('activeNow').textContent = activeCount;
+
+        // Update hourly chart
+        const hours = data.hourly.map(h => {
+          const date = new Date(h.hour);
+          return date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+        });
+        const queries = data.hourly.map(h => h.queries);
+
+        hourlyChart.data.labels = hours;
+        hourlyChart.data.datasets[0].data = queries;
+        hourlyChart.update();
+
+        // Update user distribution chart
+        const totalAuth = data.hourly.reduce((sum, h) => sum + h.authenticated, 0);
+        const totalAnon = data.hourly.reduce((sum, h) => sum + h.anonymous, 0);
+        userChart.data.datasets[0].data = [totalAuth, totalAnon];
+        userChart.update();
+
+        // Update recent queries table
+        updateRecentQueriesTable(data.recent_queries);
+
+        // Update last update time
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('zh-TW');
+
+      } catch (error) {
+        console.error('Error loading realtime data:', error);
+      }
+    }
+
+    // Load 7-day history
+    async function loadWeeklyData() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/analytics/history?days=7`, {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        const dates = data.history.map(d => {
+          const date = new Date(d.date);
+          return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+        });
+        const queries = data.history.map(d => d.total_queries);
+        const users = data.history.map(d => d.unique_users);
+
+        weeklyChart.data.labels = dates;
+        weeklyChart.data.datasets[0].data = queries;
+        weeklyChart.data.datasets[1].data = users;
+        weeklyChart.update();
+
+      } catch (error) {
+        console.error('Error loading weekly data:', error);
+      }
+    }
+
+    // Load geographic locations
+    async function loadLocationData() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/analytics/locations`, {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        // Update location pie chart
+        if (data.countries.length === 0) {
+          // Show empty state
+          locationChart.data.labels = ['No data'];
+          locationChart.data.datasets[0].data = [1];
+          locationChart.data.datasets[0].backgroundColor = ['rgba(203, 213, 225, 0.5)'];
+        } else {
+          // Populate with country data
+          locationChart.data.labels = data.countries.map(c => c.country);
+          locationChart.data.datasets[0].data = data.countries.map(c => c.count);
+        }
+        locationChart.update();
+
+        // Update IP details list
+        const ipDetailsDiv = document.getElementById('ipDetailsList');
+        if (data.ip_details.length === 0) {
+          ipDetailsDiv.innerHTML = `
+            <div class="text-center text-gray-500 py-4">
+              <p class="text-sm">No IP data available</p>
+            </div>
+          `;
+        } else {
+          ipDetailsDiv.innerHTML = data.ip_details.map(ip => {
+            const flagEmoji = getFlagEmoji(ip.countryCode);
+            return `
+              <div class="p-3 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-2xl">${flagEmoji}</span>
+                    <div>
+                      <div class="font-mono text-sm text-gray-600">${ip.ip}</div>
+                      <div class="text-xs text-gray-500">${ip.isp || 'Unknown ISP'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                  <i data-lucide="map-pin" class="w-3 h-3"></i>
+                  <span>${ip.city}, ${ip.region || ip.country}</span>
+                </div>
+                ${ip.timezone ? `
+                  <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                    <span>${ip.timezone}</span>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+
+        if (window.lucide) { lucide.createIcons(); }
+
+      } catch (error) {
+        console.error('Error loading location data:', error);
+        // Reset chart to empty state
+        locationChart.data.labels = ['Error'];
+        locationChart.data.datasets[0].data = [1];
+        locationChart.data.datasets[0].backgroundColor = ['rgba(239, 68, 68, 0.5)'];
+        locationChart.update();
+      }
+    }
+
+    // Get flag emoji from country code
+    function getFlagEmoji(countryCode) {
+      if (!countryCode) return '🌍';
+      const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt());
+      return String.fromCodePoint(...codePoints);
+    }
+
+    // Update recent queries table
+    function updateRecentQueriesTable(queries) {
+      const tbody = document.getElementById('recentQueriesTable');
+      if (queries.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+              No recent queries
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = queries.map(q => {
+        const time = new Date(q.timestamp).toLocaleTimeString('zh-TW', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        const userBadge = q.user === 'anonymous'
+          ? '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Anonymous</span>'
+          : `<span class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">${q.user}</span>`;
+
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-600">${time}</td>
+            <td class="px-4 py-3 text-sm">${userBadge}</td>
+            <td class="px-4 py-3 text-sm text-gray-800">${q.query || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${q.sources_count}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">${q.computation_time.toFixed(2)}s</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Toggle chart type
+    document.getElementById('toggleChartType').addEventListener('click', () => {
+      currentChartType = currentChartType === 'line' ? 'bar' : 'line';
+      hourlyChart.config.type = currentChartType;
+      hourlyChart.update();
+    });
+
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('refreshBtn');
+      const icon = btn.querySelector('[data-lucide]');
+      icon.classList.add('refresh-pulse');
+      await Promise.all([loadRealtimeData(), loadWeeklyData(), loadLocationData()]);
+      setTimeout(() => icon.classList.remove('refresh-pulse'), 1000);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      initCharts();
+      await Promise.all([loadRealtimeData(), loadWeeklyData(), loadLocationData()]);
+
+      // Auto-refresh every 30 seconds
+      autoRefreshInterval = setInterval(() => {
+        loadRealtimeData();
+        loadLocationData(); // Refresh location data too
+      }, 30000);
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+      }
+    });
+  </script>
+</body>
+</html>

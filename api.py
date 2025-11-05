@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal, Union
 import logging
@@ -11,6 +12,7 @@ from datetime import datetime
 import random
 from contextlib import asynccontextmanager
 import os
+import secrets
 
 # Auth imports
 from auth import (
@@ -45,6 +47,25 @@ logger = logging.getLogger(__name__)
 ENABLE_QUERY_LOGGING = os.getenv("ENABLE_QUERY_LOGGING", "true").lower() in ("true", "1", "yes")
 QUERY_LOG_DIR = os.getenv("QUERY_LOG_DIR", "logs")
 query_logger = get_query_logger(log_dir=QUERY_LOG_DIR, enable_file_logging=ENABLE_QUERY_LOGGING)
+
+# Admin authentication setup
+security = HTTPBasic()
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ddm_admin_2025")  # Change this!
+
+def verify_admin_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    """Verify admin credentials using HTTP Basic Auth"""
+    # Use secrets.compare_digest to prevent timing attacks
+    correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 # Global variables for pipeline
 rag_pipeline = None
@@ -290,6 +311,14 @@ async def root():
     elif os.path.exists("frontend/index.html"):
         return FileResponse("frontend/index.html")
     return {"message": "DDM RAG System API", "docs": "/docs"}
+
+
+@app.get("/admin")
+async def admin_console(username: str = Depends(verify_admin_credentials)):
+    """Serve the admin analytics dashboard (requires authentication)."""
+    if os.path.exists("frontend_v2/admin.html"):
+        return FileResponse("frontend_v2/admin.html")
+    return {"error": "Admin console not found"}
 
 
 @app.get("/app.js")
@@ -2050,5 +2079,292 @@ async def get_quiz_statistics(http_request: Request):
 
     except Exception as e:
         logger.error(f"Error getting quiz statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Admin Analytics Endpoints
+# ============================================================================
+
+@app.get("/admin/analytics/daily")
+async def get_daily_analytics(date: Optional[str] = None, username: str = Depends(verify_admin_credentials)):
+    """Get daily analytics from query logs (requires authentication)"""
+    try:
+        from query_logger import get_query_logger
+        from datetime import datetime, timedelta
+        from pathlib import Path
+        import json
+
+        query_logger = get_query_logger()
+        target_date = date if date else datetime.now().strftime('%Y-%m-%d')
+
+        # Get basic stats
+        stats = query_logger.get_stats(target_date)
+
+        return {
+            "date": target_date,
+            "stats": stats,
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Error getting daily analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/analytics/realtime")
+async def get_realtime_analytics(username: str = Depends(verify_admin_credentials)):
+    """Get real-time analytics (last 24 hours with hourly breakdown, requires authentication)"""
+    try:
+        from query_logger import get_query_logger
+        from datetime import datetime, timedelta
+        from pathlib import Path
+        import json
+        from collections import defaultdict
+
+        query_logger = get_query_logger()
+        log_dir = Path(query_logger.log_dir) / "queries"
+
+        # Get last 24 hours
+        now = datetime.now()
+        start_time = now - timedelta(hours=24)
+
+        # Initialize hourly buckets
+        hourly_stats = defaultdict(lambda: {
+            "queries": 0,
+            "users": set(),
+            "authenticated": 0,
+            "anonymous": 0
+        })
+
+        recent_queries = []
+        total_queries = 0
+        unique_users = set()
+
+        # Read log files from last 24 hours
+        for log_file in sorted(log_dir.glob("*.json"), reverse=True):
+            if log_file.name.startswith("ERROR"):
+                continue
+
+            try:
+                with open(log_file, 'r', encoding='utf-8') as f:
+                    entry = json.load(f)
+
+                timestamp_str = entry.get("timestamp")
+                if not timestamp_str:
+                    continue
+
+                timestamp = datetime.fromisoformat(timestamp_str)
+
+                # Only include last 24 hours
+                if timestamp < start_time:
+                    continue
+
+                total_queries += 1
+                user_email = entry.get("user", {}).get("user_email", "anonymous")
+                unique_users.add(user_email)
+
+                # Bucket by hour
+                hour_key = timestamp.strftime("%Y-%m-%d %H:00")
+                hourly_stats[hour_key]["queries"] += 1
+                hourly_stats[hour_key]["users"].add(user_email)
+
+                if user_email != "anonymous":
+                    hourly_stats[hour_key]["authenticated"] += 1
+                else:
+                    hourly_stats[hour_key]["anonymous"] += 1
+
+                # Keep last 20 queries for recent activity
+                if len(recent_queries) < 20:
+                    recent_queries.append({
+                        "timestamp": timestamp_str,
+                        "user": user_email,
+                        "query": entry.get("query", {}).get("question", "")[:100],
+                        "sources_count": entry.get("result", {}).get("sources_count", 0),
+                        "computation_time": entry.get("result", {}).get("computation_time", 0)
+                    })
+
+            except Exception as e:
+                logger.warning(f"Error reading log file {log_file}: {e}")
+                continue
+
+        # Convert hourly stats to list format
+        hourly_data = []
+        for hour in sorted(hourly_stats.keys()):
+            stats = hourly_stats[hour]
+            hourly_data.append({
+                "hour": hour,
+                "queries": stats["queries"],
+                "unique_users": len(stats["users"]),
+                "authenticated": stats["authenticated"],
+                "anonymous": stats["anonymous"]
+            })
+
+        return {
+            "period": "last_24_hours",
+            "summary": {
+                "total_queries": total_queries,
+                "unique_users": len(unique_users),
+                "authenticated_users": len([u for u in unique_users if u != "anonymous"])
+            },
+            "hourly": hourly_data,
+            "recent_queries": recent_queries,
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting realtime analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/analytics/history")
+async def get_analytics_history(days: int = 7, username: str = Depends(verify_admin_credentials)):
+    """Get analytics history for the last N days (requires authentication)"""
+    try:
+        from query_logger import get_query_logger
+        from datetime import datetime, timedelta
+
+        query_logger = get_query_logger()
+        history = []
+
+        for i in range(days):
+            date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            stats = query_logger.get_stats(date)
+            history.append({
+                "date": date,
+                "total_queries": stats.get("total_queries", 0),
+                "unique_users": stats.get("unique_users", 0),
+                "authenticated": stats.get("authenticated_queries", 0),
+                "anonymous": stats.get("anonymous_queries", 0),
+                "avg_computation_time": stats.get("avg_computation_time", 0)
+            })
+
+        return {
+            "days": days,
+            "history": list(reversed(history)),  # Oldest first
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting analytics history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/analytics/locations")
+async def get_user_locations(username: str = Depends(verify_admin_credentials)):
+    """Get geographic distribution of users (last 24 hours, requires authentication)"""
+    try:
+        from query_logger import get_query_logger
+        from datetime import datetime, timedelta
+        from pathlib import Path
+        import json
+        import httpx
+        from collections import defaultdict
+
+        query_logger = get_query_logger()
+        log_dir = Path(query_logger.log_dir) / "queries"
+
+        # Get last 24 hours
+        now = datetime.now()
+        start_time = now - timedelta(hours=24)
+
+        ip_locations = {}
+        location_counts = defaultdict(int)
+        country_counts = defaultdict(int)
+        city_counts = defaultdict(int)
+
+        # Read log files from last 24 hours
+        for log_file in sorted(log_dir.glob("*.json"), reverse=True):
+            if log_file.name.startswith("ERROR"):
+                continue
+
+            try:
+                with open(log_file, 'r', encoding='utf-8') as f:
+                    entry = json.load(f)
+
+                timestamp_str = entry.get("timestamp")
+                if not timestamp_str:
+                    continue
+
+                timestamp = datetime.fromisoformat(timestamp_str)
+                if timestamp < start_time:
+                    continue
+
+                ip_address = entry.get("user", {}).get("ip_raw")
+                if not ip_address or ip_address in ["127.0.0.1", "::1", "localhost"]:
+                    continue
+
+                # Check if we already have location for this IP (cache)
+                if ip_address not in ip_locations:
+                    try:
+                        # Use ip-api.com (free, no key needed)
+                        async with httpx.AsyncClient(timeout=5.0) as client:
+                            response = await client.get(f"http://ip-api.com/json/{ip_address}")
+                            if response.status_code == 200:
+                                geo_data = response.json()
+                                if geo_data.get("status") == "success":
+                                    ip_locations[ip_address] = {
+                                        "ip": ip_address,
+                                        "country": geo_data.get("country", "Unknown"),
+                                        "countryCode": geo_data.get("countryCode", ""),
+                                        "region": geo_data.get("regionName", ""),
+                                        "city": geo_data.get("city", "Unknown"),
+                                        "lat": geo_data.get("lat", 0),
+                                        "lon": geo_data.get("lon", 0),
+                                        "isp": geo_data.get("isp", "Unknown"),
+                                        "timezone": geo_data.get("timezone", "")
+                                    }
+                    except Exception as geo_error:
+                        logger.warning(f"Error getting geolocation for {ip_address}: {geo_error}")
+                        ip_locations[ip_address] = {
+                            "ip": ip_address,
+                            "country": "Unknown",
+                            "city": "Unknown",
+                            "lat": 0,
+                            "lon": 0
+                        }
+
+                # Count locations
+                if ip_address in ip_locations:
+                    loc = ip_locations[ip_address]
+                    country = loc.get("country", "Unknown")
+                    city = loc.get("city", "Unknown")
+                    location_key = f"{city}, {country}"
+
+                    location_counts[location_key] += 1
+                    country_counts[country] += 1
+                    city_counts[city] += 1
+
+            except Exception as e:
+                logger.warning(f"Error reading log file {log_file}: {e}")
+                continue
+
+        # Format results
+        locations = [
+            {"location": loc, "count": count}
+            for loc, count in sorted(location_counts.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        countries = [
+            {"country": country, "count": count}
+            for country, count in sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        cities = [
+            {"city": city, "count": count}
+            for city, count in sorted(city_counts.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        return {
+            "period": "last_24_hours",
+            "total_ips": len(ip_locations),
+            "locations": locations[:10],  # Top 10 locations
+            "countries": countries[:10],  # Top 10 countries
+            "cities": cities[:10],  # Top 10 cities
+            "ip_details": list(ip_locations.values())[:20],  # Sample of 20 IPs with full details
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting user locations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
