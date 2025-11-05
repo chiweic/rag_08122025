@@ -141,3 +141,4 @@ backup/
 
 # backup on organization of code base
 backup_deprecated/
+ADMIN_CONSOLE_README.md
