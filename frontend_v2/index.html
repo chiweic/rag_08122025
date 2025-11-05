@@ -133,6 +133,15 @@
     @keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.6;}30%{transform:translateY(-10px);opacity:1;}}
     #sourcePanel {position:fixed;top:0;right:-55%;width:50%;height:100%;background:white;box-shadow:-3px 0 8px rgba(0,0,0,0.1);transition:right 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
     #sourcePanel.active { right: 0; }
+    #quizPanel {position:fixed;top:0;right:-55%;width:50%;height:100%;background:white;box-shadow:-3px 0 8px rgba(0,0,0,0.1);transition:right 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
+    #quizPanel.active { right: 0; }
+    .quiz-option {padding:0.75rem 1rem;border:2px solid #e5e7eb;border-radius:0.5rem;cursor:pointer;transition:all 0.2s ease;margin-bottom:0.5rem;}
+    .quiz-option:hover {border-color:#14b8a6;background:#f0fdfa;}
+    .quiz-option.selected {border-color:#14b8a6;background:#f0fdfa;font-weight:500;}
+    .quiz-option.correct {border-color:#10b981;background:#d1fae5;color:#047857;}
+    .quiz-option.incorrect {border-color:#ef4444;background:#fee2e2;color:#dc2626;}
+    .quiz-textarea {width:100%;min-height:120px;padding:0.75rem;border:2px solid #e5e7eb;border-radius:0.5rem;resize:vertical;font-size:0.875rem;transition:border-color 0.2s ease;}
+    .quiz-textarea:focus {outline:none;border-color:#14b8a6;}
     #summaryPanel {position:fixed;top:0;left:-55%;width:50%;height:100%;background:white;box-shadow:3px 0 8px rgba(0,0,0,0.1);transition:left 0.6s cubic-bezier(0.22, 1, 0.36, 1);z-index:50;padding:2rem 1.5rem;overflow-y:auto;}
     #summaryPanel.active { left: 0; }
     .summary-skeleton { animation: pulse 1.5s ease-in-out infinite; }
@@ -172,6 +181,9 @@
       <span class="tab-btn tab-inactive" data-tab='recommendation'>推薦</span>
     </div>
     <div class="nav-buttons">
+      <button id="quizBtn" class="nav-btn" style="display:none;">
+        <i data-lucide="clipboard-list" class="w-4 h-4"></i>測驗
+      </button>
       <button id="aboutBtn" class="nav-btn">
         <i data-lucide="info" class="w-4 h-4"></i>關於
       </button>
@@ -200,15 +212,54 @@
   <div id="journeyPanel">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-semibold text-teal-700 flex items-center gap-2">
-        <i data-lucide="book-open" class="w-6 h-6"></i>個人學習歷程（開發中）
+        <i data-lucide="book-open" class="w-6 h-6"></i>個人學習歷程
       </h2>
       <button id="closeJourney" class="text-gray-400 hover:text-gray-600">
         <i data-lucide="x" class="w-6 h-6"></i>
       </button>
     </div>
-    <div class="space-y-4 text-gray-600">
-      <p>學習歷程將整合你的提問、書籍推薦和活動參與，協助你掌握佛法進展。</p>
-      <p class="text-sm text-gray-500">目前仍在規劃中，歡迎提供回饋。</p>
+
+    <!-- Statistics Section -->
+    <div id="journeyStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+        <div class="text-2xl font-bold text-blue-700" id="statTotalQuizzes">-</div>
+        <div class="text-sm text-blue-600">測驗次數</div>
+      </div>
+      <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
+        <div class="text-2xl font-bold text-green-700" id="statAvgScore">-</div>
+        <div class="text-sm text-green-600">平均分數</div>
+      </div>
+      <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
+        <div class="text-2xl font-bold text-purple-700" id="statBestScore">-</div>
+        <div class="text-sm text-purple-600">最高分數</div>
+      </div>
+      <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
+        <div class="text-2xl font-bold text-orange-700" id="statTopics">-</div>
+        <div class="text-sm text-orange-600">學習主題</div>
+      </div>
+    </div>
+
+    <!-- Quiz History Section -->
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="history" class="w-5 h-5"></i>測驗歷史記錄
+      </h3>
+      <div id="quizHistoryList" class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="text-center text-gray-500 py-8">
+          <i data-lucide="loader" class="w-8 h-8 mx-auto mb-2 animate-spin"></i>
+          <p>載入中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grade Distribution -->
+    <div>
+      <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>成績分布
+      </h3>
+      <div id="gradeDistribution" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <!-- Will be populated dynamically -->
+      </div>
     </div>
   </div>
 
@@ -393,6 +444,28 @@
     </div>
   </main>
 
+  <div id="quizPanel">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-teal-700 flex items-center gap-2">
+        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+        <span id="quizTitle">測驗</span>
+      </h2>
+      <button id="closeQuiz" class="text-gray-400 hover:text-gray-600">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div id="quizContent">
+      <div class="text-center py-12 text-gray-500">
+        <i data-lucide="help-circle" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+        <p class="mb-4">請先進行查詢，然後產生測驗題目</p>
+        <button id="generateQuizBtn" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition" disabled>
+          <i data-lucide="sparkles" class="w-4 h-4 inline mr-2"></i>產生測驗
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const form=document.getElementById('searchForm');
     const q=document.getElementById('q');
@@ -411,10 +484,16 @@
     const composerForm=document.getElementById('composerForm');
     const q2=document.getElementById('q2');
     const aboutBtn=document.getElementById('aboutBtn');
+    const quizBtn=document.getElementById('quizBtn');
     const loginBtn=document.getElementById('loginBtn');
     const userMenu=document.getElementById('userMenu');
     const userMenuBtn=document.getElementById('userMenuBtn');
     const userDropdown=document.getElementById('userDropdown');
+    const quizPanel=document.getElementById('quizPanel');
+    const closeQuiz=document.getElementById('closeQuiz');
+    const quizContent=document.getElementById('quizContent');
+    const quizTitle=document.getElementById('quizTitle');
+    const generateQuizBtn=document.getElementById('generateQuizBtn');
     const logoutBtn=document.getElementById('logoutBtn');
     const journeyMenuBtn=document.getElementById('journeyMenuBtn');
     const journeyPanel=document.getElementById('journeyPanel');
@@ -436,7 +515,18 @@
     const registerSubmit=document.getElementById('registerSubmit');
     const userNameLabel=document.getElementById('userName');
 
-    const API_BASE_URL=window.API_BASE_URL||'http://localhost:8000';
+    // Auto-detect API base URL from current location
+    // If accessing via domain (e.g., api.changpt.org), use same origin
+    // Otherwise fall back to localhost
+    const API_BASE_URL = window.API_BASE_URL || (() => {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:8000';
+      }
+      // For production domains, use same origin (preserves https/http and port)
+      return window.location.origin;
+    })();
+    console.log(`🔗 API Base URL: ${API_BASE_URL}`);
     let authToken=localStorage.getItem('authToken');
     let currentUser=null;
     let retrievalMode=false; // Toggle between /query and /retrieve endpoints
@@ -451,6 +541,7 @@
     function updateUIForLoggedIn(user){
       loginBtn.style.display='none';
       userMenu.style.display='flex';
+      quizBtn.style.display='flex';
       userNameLabel.textContent=user.full_name||user.email;
       if(window.lucide){ lucide.createIcons(); }
     }
@@ -458,6 +549,7 @@
     function updateUIForLoggedOut(){
       loginBtn.style.display='flex';
       userMenu.style.display='none';
+      quizBtn.style.display='none';
       userDropdown.style.display='none';
       if(window.lucide){ lucide.createIcons(); }
     }
@@ -1363,6 +1455,9 @@
       home.classList.add('hidden');
       composer.classList.remove('hidden');
 
+      // Enable quiz generation after query
+      enableQuizGeneration();
+
       // Note: Scroll happens after content loads (inside createPage's fillSummary callback)
     }
 
@@ -1435,10 +1530,148 @@
       }
     });
 
+    // Load quiz history and statistics
+    async function loadQuizHistory() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping quiz history load');
+        return;
+      }
+
+      console.log('Loading quiz history...');
+
+      try {
+        // Load statistics
+        const statsRes = await fetch(`${API_BASE_URL}/quiz/statistics`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log('Statistics response:', statsRes.status);
+        if (statsRes.ok) {
+          const {statistics} = await statsRes.json();
+          console.log('Statistics data:', statistics);
+          document.getElementById('statTotalQuizzes').textContent = statistics.total_attempts || '0';
+          document.getElementById('statAvgScore').textContent = statistics.average_score ?
+            `${statistics.average_score.toFixed(1)}%` : '-';
+          document.getElementById('statBestScore').textContent = statistics.best_score ?
+            `${statistics.best_score.toFixed(1)}%` : '-';
+          document.getElementById('statTopics').textContent = (statistics.topics_covered && statistics.topics_covered.length) || '0';
+
+          // Display grade distribution
+          const gradeDiv = document.getElementById('gradeDistribution');
+          const grades = [
+            {key: '優秀', color: 'bg-green-100 text-green-700', icon: 'trophy'},
+            {key: '良好', color: 'bg-blue-100 text-blue-700', icon: 'star'},
+            {key: '及格', color: 'bg-yellow-100 text-yellow-700', icon: 'check-circle'},
+            {key: '需加強', color: 'bg-red-100 text-red-700', icon: 'alert-circle'}
+          ];
+          gradeDiv.innerHTML = grades.map(g => {
+            const count = statistics.grade_distribution[g.key] || 0;
+            return `<div class="${g.color} p-3 rounded-lg text-center">
+              <i data-lucide="${g.icon}" class="w-4 h-4 mx-auto mb-1"></i>
+              <div class="font-bold">${count}</div>
+              <div class="text-xs">${g.key}</div>
+            </div>`;
+          }).join('');
+        } else {
+          // Statistics request failed
+          console.error('Statistics request failed:', statsRes.status);
+          document.getElementById('statTotalQuizzes').textContent = '-';
+          document.getElementById('statAvgScore').textContent = '-';
+          document.getElementById('statBestScore').textContent = '-';
+          document.getElementById('statTopics').textContent = '-';
+        }
+
+        // Load quiz history
+        const historyRes = await fetch(`${API_BASE_URL}/quiz/history?limit=20`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log('Quiz history response:', historyRes.status);
+        if (historyRes.ok) {
+          const {quizzes} = await historyRes.json();
+          console.log('Quiz history data:', quizzes);
+          const listDiv = document.getElementById('quizHistoryList');
+
+          if (quizzes.length === 0) {
+            listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
+              <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+              <p>尚無測驗記錄</p>
+              <p class="text-sm">完成測驗後，歷史記錄會顯示在此</p>
+            </div>`;
+          } else {
+            listDiv.innerHTML = quizzes.map(q => {
+              const gradeColors = {
+                '優秀': 'bg-green-50 border-green-200 text-green-700',
+                '良好': 'bg-blue-50 border-blue-200 text-blue-700',
+                '及格': 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                '需加強': 'bg-red-50 border-red-200 text-red-700'
+              };
+              const gradeClass = gradeColors[q.overall_grade] || 'bg-gray-50 border-gray-200';
+              const date = new Date(q.created_at).toLocaleString('zh-TW', {
+                month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+              });
+
+              return `<div class="border ${gradeClass} rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex-1">
+                    <div class="font-semibold text-gray-700">${q.reference_chunk_title || '未命名主題'}</div>
+                    <div class="text-sm text-gray-500">${q.source_query}</div>
+                  </div>
+                  <div class="text-right ml-4">
+                    <div class="font-bold text-lg">${q.percentage.toFixed(0)}%</div>
+                    <div class="text-xs">${q.overall_grade}</div>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-gray-500">${date}</span>
+                  <span class="text-gray-600">得分: ${q.total_score}/${q.max_score}</span>
+                </div>
+              </div>`;
+            }).join('');
+          }
+        } else {
+          // Quiz history request failed
+          console.error('Quiz history request failed:', historyRes.status);
+          const listDiv = document.getElementById('quizHistoryList');
+          listDiv.innerHTML = `<div class="text-center text-red-500 py-8">
+            <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+            <p>無法載入測驗記錄</p>
+            <p class="text-sm">請稍後再試</p>
+          </div>`;
+        }
+
+        // Always refresh icons at the end
+        if (window.lucide) {
+          lucide.createIcons();
+          console.log('Icons refreshed');
+        }
+
+      } catch (error) {
+        console.error('Error loading quiz history:', error);
+
+        // Clear statistics on error
+        document.getElementById('statTotalQuizzes').textContent = 'Error';
+        document.getElementById('statAvgScore').textContent = 'Error';
+        document.getElementById('statBestScore').textContent = 'Error';
+        document.getElementById('statTopics').textContent = 'Error';
+
+        // Show error in quiz history list
+        document.getElementById('quizHistoryList').innerHTML = `
+          <div class="text-center text-red-500 py-8">
+            <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+            <p>載入失敗</p>
+            <p class="text-sm">${error.message || '未知錯誤'}</p>
+          </div>`;
+
+        // Try to refresh icons even on error
+        if (window.lucide) { lucide.createIcons(); }
+      }
+    }
+
     journeyMenuBtn.addEventListener('click',()=>{
       journeyPanel.classList.add('active');
       journeyBackdrop.classList.add('active');
       userDropdown.style.display='none';
+      loadQuizHistory();  // Load quiz data when panel opens
       if(window.lucide){ lucide.createIcons(); }
     });
 
@@ -1523,6 +1756,318 @@
     // Panel close handlers
     closeSource.addEventListener('click',()=>sourcePanel.classList.remove('active'));
     closeSummary.addEventListener('click',()=>summaryPanel.classList.remove('active'));
+    closeQuiz.addEventListener('click',()=>quizPanel.classList.remove('active'));
+
+    // Quiz functionality
+    let currentQuiz = null;
+    let userAnswers = [];
+    let lastQueryMade = false;
+
+    // Enable quiz button after successful query
+    function enableQuizGeneration() {
+      lastQueryMade = true;
+      generateQuizBtn.disabled = false;
+      generateQuizBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    // Open quiz panel
+    quizBtn.addEventListener('click', () => {
+      quizPanel.classList.add('active');
+      if (window.lucide) { lucide.createIcons(); }
+    });
+
+    // Generate quiz
+    generateQuizBtn.addEventListener('click', async () => {
+      if (!lastQueryMade) {
+        alert('請先進行查詢再產生測驗');
+        return;
+      }
+
+      try {
+        generateQuizBtn.disabled = true;
+        generateQuizBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 inline mr-2 animate-spin"></i>產生中...';
+        if (window.lucide) { lucide.createIcons(); }
+
+        const response = await fetch(`${API_BASE_URL}/quiz/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+          },
+          body: JSON.stringify({ user_id: currentUser?.email || 'anonymous' })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || '產生測驗失敗');
+        }
+
+        currentQuiz = data;
+        userAnswers = new Array(data.questions.length).fill(null);
+        displayQuiz(data);
+
+      } catch (error) {
+        console.error('Error generating quiz:', error);
+        alert('產生測驗時發生錯誤：' + error.message);
+        generateQuizBtn.disabled = false;
+        generateQuizBtn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 inline mr-2"></i>產生測驗';
+        if (window.lucide) { lucide.createIcons(); }
+      }
+    });
+
+    // Display quiz questions
+    function displayQuiz(quiz) {
+      quizTitle.innerHTML = `<i data-lucide="clipboard-list" class="w-5 h-5"></i>測驗 (${quiz.questions.length} 題)`;
+
+      let html = `
+        <div class="mb-4 p-3 bg-teal-50 rounded-lg border border-teal-200">
+          <p class="text-sm text-teal-800"><strong>來源：</strong>${quiz.reference_chunk.title}</p>
+        </div>
+      `;
+
+      quiz.questions.forEach((question, index) => {
+        if (question.type === 'multiple_choice') {
+          html += `
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p class="font-semibold text-gray-900 mb-3">${index + 1}. ${question.question}</p>
+              <div class="space-y-2">
+                ${question.options.map((option, optIndex) => `
+                  <div class="quiz-option" data-question="${index}" data-answer="${option[0]}">
+                    ${option}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (question.type === 'text') {
+          html += `
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p class="font-semibold text-gray-900 mb-3">${index + 1}. ${question.question}</p>
+              <textarea
+                class="quiz-textarea"
+                data-question="${index}"
+                placeholder="請輸入您的答案..."
+                rows="5"
+              ></textarea>
+            </div>
+          `;
+        }
+      });
+
+      html += `
+        <div class="mt-6 flex justify-between items-center">
+          <p class="text-sm text-gray-600">已完成：<span id="quizProgress">0</span> / ${quiz.questions.length}</p>
+          <button id="submitQuizBtn" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition" disabled>
+            提交測驗
+          </button>
+        </div>
+      `;
+
+      quizContent.innerHTML = html;
+      if (window.lucide) { lucide.createIcons(); }
+
+      // Add event listeners
+      document.querySelectorAll('.quiz-option').forEach(option => {
+        option.addEventListener('click', function() {
+          const questionIndex = parseInt(this.dataset.question);
+          const answer = this.dataset.answer;
+
+          // Remove selected from siblings
+          this.parentElement.querySelectorAll('.quiz-option').forEach(opt => {
+            opt.classList.remove('selected');
+          });
+
+          // Add selected to this option
+          this.classList.add('selected');
+
+          // Save answer
+          userAnswers[questionIndex] = {
+            question_index: questionIndex,
+            question_type: 'multiple_choice',
+            answer: answer
+          };
+
+          updateQuizProgress();
+        });
+      });
+
+      document.querySelectorAll('.quiz-textarea').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+          const questionIndex = parseInt(this.dataset.question);
+          const answer = this.value.trim();
+
+          if (answer) {
+            userAnswers[questionIndex] = {
+              question_index: questionIndex,
+              question_type: 'text',
+              answer: answer
+            };
+          } else {
+            userAnswers[questionIndex] = null;
+          }
+
+          updateQuizProgress();
+        });
+      });
+
+      document.getElementById('submitQuizBtn').addEventListener('click', submitQuiz);
+    }
+
+    // Update quiz progress
+    function updateQuizProgress() {
+      const answeredCount = userAnswers.filter(a => a !== null).length;
+      document.getElementById('quizProgress').textContent = answeredCount;
+
+      const submitBtn = document.getElementById('submitQuizBtn');
+      if (answeredCount === currentQuiz.questions.length) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Submit quiz for evaluation
+    async function submitQuiz() {
+      try {
+        const submitBtn = document.getElementById('submitQuizBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 inline mr-2 animate-spin"></i>評分中...';
+        if (window.lucide) { lucide.createIcons(); }
+
+        const response = await fetch(`${API_BASE_URL}/quiz/evaluate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+          },
+          body: JSON.stringify({
+            quiz_id: currentQuiz.quiz_id,
+            questions: currentQuiz.questions,
+            answers: userAnswers.filter(a => a !== null),
+            user_id: currentUser?.email || 'anonymous'
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.detail || '評分失敗');
+        }
+
+        displayQuizResults(result);
+
+      } catch (error) {
+        console.error('Error submitting quiz:', error);
+        alert('提交測驗時發生錯誤：' + error.message);
+      }
+    }
+
+    // Display quiz results
+    function displayQuizResults(result) {
+      quizTitle.innerHTML = `<i data-lucide="trophy" class="w-5 h-5"></i>測驗結果`;
+
+      let html = `
+        <div class="mb-6 p-6 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-lg border-2 border-teal-300">
+          <div class="text-center mb-4">
+            <div class="text-5xl font-bold text-teal-700 mb-2">${result.percentage}%</div>
+            <div class="text-xl font-semibold text-gray-800">${result.overall_grade}</div>
+            <div class="text-sm text-gray-600 mt-2">${result.total_score} / ${result.max_score} 分</div>
+          </div>
+          <p class="text-gray-700 text-center">${result.overall_feedback}</p>
+          ${result.zen_master_response ? `
+            <div class="mt-4 p-3 bg-white/50 rounded border border-teal-200">
+              <p class="text-sm text-teal-800 italic">"${result.zen_master_response}"</p>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="font-semibold text-gray-900">詳細評分</h3>
+      `;
+
+      result.evaluations.forEach((evaluation, index) => {
+        const isCorrect = evaluation.question_type === 'multiple_choice' && evaluation.is_correct;
+        const bgColor = evaluation.question_type === 'multiple_choice'
+          ? (isCorrect ? 'bg-green-50' : 'bg-red-50')
+          : 'bg-blue-50';
+
+        html += `
+          <div class="p-4 ${bgColor} rounded-lg border ${evaluation.question_type === 'multiple_choice' ? (isCorrect ? 'border-green-200' : 'border-red-200') : 'border-blue-200'}">
+            <p class="font-semibold text-gray-900 mb-2">${index + 1}. ${evaluation.question}</p>
+
+            ${evaluation.question_type === 'multiple_choice' ? `
+              <div class="text-sm space-y-1 mb-2">
+                <p>你的答案：<strong>${evaluation.user_answer}</strong> ${isCorrect ? '✓' : '✗'}</p>
+                ${!isCorrect ? `<p>正確答案：<strong>${evaluation.correct_answer}</strong></p>` : ''}
+              </div>
+              <p class="text-sm text-gray-700">${evaluation.explanation}</p>
+              <p class="text-xs text-gray-600 mt-2">${evaluation.feedback}</p>
+            ` : `
+              <div class="text-sm space-y-2">
+                <p class="text-gray-700"><strong>你的答案：</strong></p>
+                <p class="text-gray-600 bg-white p-2 rounded">${evaluation.user_answer}</p>
+
+                <div class="grid grid-cols-3 gap-2 mt-3">
+                  <div class="text-center p-2 bg-white rounded">
+                    <div class="text-xs text-gray-500">理解</div>
+                    <div class="font-bold text-teal-600">${evaluation.understanding_score}/2</div>
+                  </div>
+                  <div class="text-center p-2 bg-white rounded">
+                    <div class="text-xs text-gray-500">深度</div>
+                    <div class="font-bold text-teal-600">${evaluation.depth_score}/2</div>
+                  </div>
+                  <div class="text-center p-2 bg-white rounded">
+                    <div class="text-xs text-gray-500">表達</div>
+                    <div class="font-bold text-teal-600">${evaluation.expression_score}/1</div>
+                  </div>
+                </div>
+
+                <p class="text-sm text-gray-700 mt-2"><strong>評語：</strong>${evaluation.feedback}</p>
+                ${evaluation.strengths ? `<p class="text-sm text-green-700"><strong>優點：</strong>${evaluation.strengths}</p>` : ''}
+                ${evaluation.improvements ? `<p class="text-sm text-amber-700"><strong>建議：</strong>${evaluation.improvements}</p>` : ''}
+              </div>
+            `}
+
+            <div class="mt-2 text-right">
+              <span class="text-sm font-semibold ${evaluation.question_type === 'multiple_choice' ? (isCorrect ? 'text-green-700' : 'text-red-700') : 'text-blue-700'}">
+                ${evaluation.score} / ${evaluation.max_score} 分
+              </span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+        </div>
+        <div class="mt-6 text-center">
+          <button id="retryQuizBtn" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>再測一次
+          </button>
+        </div>
+      `;
+
+      quizContent.innerHTML = html;
+      if (window.lucide) { lucide.createIcons(); }
+
+      document.getElementById('retryQuizBtn').addEventListener('click', () => {
+        currentQuiz = null;
+        userAnswers = [];
+        quizContent.innerHTML = `
+          <div class="text-center py-12 text-gray-500">
+            <i data-lucide="clipboard-list" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+            <p class="mb-4">請先進行查詢，然後產生測驗題目</p>
+            <button id="generateQuizBtn" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
+              <i data-lucide="sparkles" class="w-4 h-4 inline mr-2"></i>產生測驗
+            </button>
+          </div>
+        `;
+        if (window.lucide) { lucide.createIcons(); }
+        document.getElementById('generateQuizBtn').addEventListener('click', generateQuizBtn.onclick);
+      });
+    }
   </script>
 </body>
 </html>

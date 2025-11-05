@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 import random
 from contextlib import asynccontextmanager
+import os
 
 # Auth imports
 from auth import (
@@ -27,9 +28,23 @@ from book_recommender import BookRecommender
 from query_recommender import QueryRecommender
 from event_recommender import EventRecommender
 from audio_recommender import AudioRecommender
+from query_logger import get_query_logger
+from db_helpers import (
+    save_quiz_attempt,
+    get_quiz_history,
+    get_quiz_attempt_detail,
+    get_quiz_statistics,
+    update_user_achievement,
+    check_and_create_master_comment
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize query logger
+ENABLE_QUERY_LOGGING = os.getenv("ENABLE_QUERY_LOGGING", "true").lower() in ("true", "1", "yes")
+QUERY_LOG_DIR = os.getenv("QUERY_LOG_DIR", "logs")
+query_logger = get_query_logger(log_dir=QUERY_LOG_DIR, enable_file_logging=ENABLE_QUERY_LOGGING)
 
 # Global variables for pipeline
 rag_pipeline = None
@@ -510,18 +525,76 @@ async def get_faq(
 
 
 # ============================================================================
+# Helper Functions for User Tracking
+# ============================================================================
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP from request, considering proxies"""
+    # Check for X-Forwarded-For header (proxy/load balancer)
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # X-Forwarded-For can contain multiple IPs, take the first one
+        return forwarded.split(",")[0].strip()
+
+    # Check for X-Real-IP header (nginx)
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+
+    # Fall back to direct client IP
+    if request.client:
+        return request.client.host
+
+    return "unknown"
+
+
+async def get_user_info(request: Request) -> Dict[str, Optional[str]]:
+    """
+    Extract user identification info from request
+
+    Returns:
+        Dict with ip_address and user_email (if authenticated)
+    """
+    ip_address = get_client_ip(request)
+    user_email = None
+
+    # Try to get authenticated user from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            # Use the existing auth function to validate token
+            from jose import jwt
+            from auth import SECRET_KEY, ALGORITHM
+
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_email = payload.get("sub") or payload.get("email")  # JWT standard uses "sub" for subject (email)
+        except Exception:
+            # Token invalid or expired, keep as anonymous
+            pass
+
+    return {
+        "ip_address": ip_address,
+        "user_email": user_email
+    }
+
+
+# ============================================================================
 # RAG Endpoints
 # ============================================================================
 
 @app.post("/query")
-async def query_rag(request: QueryRequest):
-    """Main RAG endpoint for question answering."""
+async def query_rag(request: QueryRequest, http_request: Request):
+    """Main RAG endpoint for question answering with query logging."""
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
             detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
-    
+
+    # Get user identification
+    user_info = await get_user_info(http_request)
+
     try:
         result = rag_pipeline.query(
             question=request.question,
@@ -529,7 +602,22 @@ async def query_rag(request: QueryRequest):
             filter_dict=request.filter,
             include_sources=request.include_sources
         )
-        
+
+        # Log the query and result
+        if ENABLE_QUERY_LOGGING:
+            query_logger.log_query(
+                query=request.question,
+                result=result,
+                ip_address=user_info["ip_address"],
+                user_email=user_info["user_email"],
+                retrieval_mode="rag",
+                metadata={
+                    "top_k": request.top_k,
+                    "filter": request.filter,
+                    "include_sources": request.include_sources
+                }
+            )
+
         # Cache the query result
         global last_query_cache, query_history_cache
         cache_entry = {
@@ -541,10 +629,20 @@ async def query_rag(request: QueryRequest):
         }
         last_query_cache = cache_entry
         query_history_cache.append(cache_entry)
-        
+
         return result
-        
+
     except Exception as e:
+        # Log the error
+        if ENABLE_QUERY_LOGGING:
+            query_logger.log_error(
+                query=request.question,
+                error=e,
+                ip_address=user_info["ip_address"],
+                user_email=user_info["user_email"],
+                metadata={"top_k": request.top_k}
+            )
+
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -684,23 +782,26 @@ async def chat_completions(request: ChatCompletionRequest):
 
 
 @app.post("/query/stream")
-async def stream_rag(request: QueryRequest):
+async def stream_rag(request: QueryRequest, http_request: Request):
     """Streaming RAG endpoint for real-time question answering."""
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
             detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
-    
+
+    # Extract user info for logging
+    user_info = await get_user_info(http_request)
+
     try:
         async def generate_stream():
-            # Variables to collect streaming data for cache
+            # Variables to collect streaming data for cache and logging
             collected_answer = []
             collected_sources = []
             computation_time = {}
-            
+
             yield "data: {\"type\": \"start\"}\n\n"
-            
+
             async for chunk in rag_pipeline.stream_query(
                 question=request.question,
                 top_k=request.top_k,
@@ -708,7 +809,7 @@ async def stream_rag(request: QueryRequest):
                 include_sources=request.include_sources
             ):
                 yield chunk
-                
+
                 # Parse chunk to collect data for cache
                 if "data: " in chunk:
                     try:
@@ -725,21 +826,49 @@ async def stream_rag(request: QueryRequest):
                             }
                     except:
                         pass
-                
+
             yield "data: [DONE]\n\n"
-            
+
+            # Build result for caching and logging
+            final_answer = "".join(collected_answer)
+            result = {
+                "answer": final_answer,
+                "sources": collected_sources,
+                "computation_time": computation_time.get("total_time", 0),
+                "cached": False
+            }
+
             # Cache the complete result after streaming
             global last_query_cache, query_history_cache
             cache_entry = {
                 "query": request.question,
-                "answer": "".join(collected_answer),
+                "answer": final_answer,
                 "sources": collected_sources,
                 "timestamp": datetime.now().isoformat(),
                 "computation_time": computation_time
             }
             last_query_cache = cache_entry
             query_history_cache.append(cache_entry)
-        
+
+            # Log the query after streaming completes
+            if ENABLE_QUERY_LOGGING:
+                try:
+                    query_logger.log_query(
+                        query=request.question,
+                        result=result,
+                        ip_address=user_info["ip_address"],
+                        user_email=user_info["user_email"],
+                        retrieval_mode="rag_stream",
+                        metadata={
+                            "top_k": request.top_k,
+                            "include_sources": request.include_sources,
+                            "synthesis_time": computation_time.get("synthesis_time"),
+                            "total_time": computation_time.get("total_time")
+                        }
+                    )
+                except Exception as log_error:
+                    logger.error(f"Failed to log query: {log_error}")
+
         return StreamingResponse(
             generate_stream(),
             media_type="text/event-stream",
@@ -751,9 +880,26 @@ async def stream_rag(request: QueryRequest):
                 "Access-Control-Allow-Headers": "*",
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Error processing streaming query: {e}")
+
+        # Log the error
+        if ENABLE_QUERY_LOGGING:
+            try:
+                query_logger.log_error(
+                    query=request.question,
+                    error=e,
+                    ip_address=user_info["ip_address"],
+                    user_email=user_info["user_email"],
+                    metadata={
+                        "top_k": request.top_k,
+                        "endpoint": "/query/stream"
+                    }
+                )
+            except Exception as log_error:
+                logger.error(f"Failed to log error: {log_error}")
+
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -795,18 +941,43 @@ async def get_statistics():
     """Get statistics about the loaded data and vector store."""
     try:
         stats = {"initialized": is_initialized}
-        
+
         if vector_store:
             stats["vector_store"] = vector_store.get_collection_info()
-        
+
         # Get chunk statistics
         loader = ChunkDataLoader()
         stats["data"] = loader.get_chunk_statistics()
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error(f"Error getting statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/query/statistics")
+async def get_query_statistics(date: Optional[str] = None):
+    """
+    Get query logging statistics for a specific date or today.
+
+    Args:
+        date: Date in YYYY-MM-DD format (default: today)
+
+    Returns:
+        Query statistics including total queries, user counts, avg times, etc.
+    """
+    if not ENABLE_QUERY_LOGGING:
+        return {
+            "error": "Query logging is disabled",
+            "message": "Set ENABLE_QUERY_LOGGING=true in .env to enable"
+        }
+
+    try:
+        stats = query_logger.get_stats(date)
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting query statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1235,31 +1406,38 @@ class QuizRequest(BaseModel):
     user_id: Optional[str] = Field(default="anonymous", description="User identifier")
 
 
+class QuizAnswer(BaseModel):
+    question_index: int = Field(..., description="Index of the question (0-based)")
+    question_type: str = Field(..., description="Type of question: 'multiple_choice' or 'text'")
+    answer: str = Field(..., description="User's answer (option letter for multiple choice, text for text questions)")
+
+
 class QuizAnswerRequest(BaseModel):
     quiz_id: str = Field(..., description="Quiz ID")
-    answers: List[str] = Field(..., description="User's answers to quiz questions")
+    questions: List[Dict[str, Any]] = Field(..., description="The original quiz questions for reference")
+    answers: List[QuizAnswer] = Field(..., description="User's answers to quiz questions")
     user_id: Optional[str] = Field(default="anonymous", description="User identifier")
 
 
 @app.post("/quiz/generate")
 async def generate_quiz(request: QuizRequest):
-    """Generate quiz questions from highest-ranking reference chunk."""
+    """Generate mixed-format quiz questions (multiple choice + text-based) from highest-ranking reference chunk."""
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
             detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
-    
+
     try:
         global last_query_cache
-        
+
         # Check if we have cached query result with sources
         if not last_query_cache or not last_query_cache.get("sources"):
             raise HTTPException(
                 status_code=400,
                 detail="No reference materials available. Please make a query first."
             )
-        
+
         # Get the highest-ranking reference chunk
         sources = last_query_cache.get("sources", [])
         if not sources:
@@ -1267,72 +1445,134 @@ async def generate_quiz(request: QuizRequest):
                 status_code=400,
                 detail="No reference sources found in last query."
             )
-        
+
         # Get highest ranking chunk (first one in the sorted list)
         highest_chunk = sources[0]
         chunk_content = highest_chunk.get("text", "") or highest_chunk.get("content", "")
         chunk_title = highest_chunk.get("title", "")
-        
+
         if not chunk_content:
             raise HTTPException(
                 status_code=400,
                 detail=f"Reference chunk has no content. Available keys: {list(highest_chunk.keys())}"
             )
-        
-        # Create quiz generation prompt
-        quiz_prompt = f"""基於以下佛教文本，請生成2-3個深入思考的問題。這些問題應該鼓勵讀者仔細閱讀並理解文本的深層含義。
+
+        # Create quiz generation prompt with mixed question types
+        quiz_prompt = f"""基於以下佛教文本，請生成3個測驗問題，包括選擇題和文字題。
 
 文本標題：{chunk_title}
 
 文本內容：
 {chunk_content}
 
-請生成的問題要求：
-1. 2-3個問題即可
-2. 問題應該測試對文本核心概念的理解
-3. 問題應該引導深入思考，而非簡單記憶
-4. 用中文提問
-5. 問題應該是開放式的，允許多種合理的回答
+請生成以下格式的問題：
+1. 一個多選題（測試基本概念理解）
+2. 一個多選題（測試進階理解）
+3. 一個開放式文字題（測試深度思考與應用）
 
-請按以下格式輸出：
-問題1：[問題內容]
-問題2：[問題內容]
-問題3：[問題內容]（如果有的話）"""
+**格式要求**：
+對於多選題，請使用以下JSON格式：
+{{
+  "type": "multiple_choice",
+  "question": "問題內容",
+  "options": ["A. 選項1", "B. 選項2", "C. 選項3", "D. 選項4"],
+  "correct_answer": "A",
+  "explanation": "正確答案的解釋"
+}}
+
+對於文字題，請使用以下JSON格式：
+{{
+  "type": "text",
+  "question": "問題內容",
+  "reference_answer": "參考答案要點（學員可以有不同表達，但應包含這些核心概念）"
+}}
+
+**內容要求**：
+1. 多選題應基於文本的核心概念，每題4個選項
+2. 選項應有適度難度，避免過於明顯
+3. 文字題應引導深入思考，鼓勵結合個人經驗或理解
+4. 所有問題用繁體中文
+
+請直接輸出包含3個問題的JSON陣列，格式如下：
+[
+  {{多選題1}},
+  {{多選題2}},
+  {{文字題}}
+]"""
 
         # Generate quiz using LLM
         start_time = time.time()
         llm = rag_pipeline.llm
         quiz_response = llm.invoke(quiz_prompt)
-        
+
         # Extract text from response
         if hasattr(quiz_response, 'content'):
             quiz_text = quiz_response.content
         else:
             quiz_text = str(quiz_response)
-        
-        # Parse questions from response
-        questions = []
-        lines = quiz_text.strip().split('\n')
-        for line in lines:
-            line = line.strip()
-            if line and ('問題' in line or line.startswith('Q') or line.startswith('q')):
-                # Clean up question text
-                question = line.split('：', 1)[-1].strip()
-                if question:
-                    questions.append(question)
-        
-        if not questions:
-            # Fallback: split by numbers or common patterns
-            import re
-            question_matches = re.findall(r'[12３]\.\s*(.+)', quiz_text)
-            if question_matches:
-                questions = [q.strip() for q in question_matches]
-        
+
+        # Parse JSON response
+        import json
+        import re
+
+        # Try to extract JSON array from response
+        try:
+            # Remove markdown code blocks if present
+            quiz_text_clean = re.sub(r'```json\s*|\s*```', '', quiz_text).strip()
+
+            # Try to find JSON array pattern
+            json_match = re.search(r'\[[\s\S]*\]', quiz_text_clean)
+            if json_match:
+                quiz_text_clean = json_match.group(0)
+
+            questions = json.loads(quiz_text_clean)
+
+            # Validate structure
+            if not isinstance(questions, list):
+                raise ValueError("Response is not a list")
+
+            # Validate each question
+            for i, q in enumerate(questions):
+                if not isinstance(q, dict):
+                    raise ValueError(f"Question {i+1} is not a dict")
+                if "type" not in q or "question" not in q:
+                    raise ValueError(f"Question {i+1} missing required fields")
+
+                # Validate multiple choice questions
+                if q["type"] == "multiple_choice":
+                    if "options" not in q or "correct_answer" not in q:
+                        raise ValueError(f"Multiple choice question {i+1} missing options or correct_answer")
+                    if not isinstance(q["options"], list) or len(q["options"]) != 4:
+                        raise ValueError(f"Multiple choice question {i+1} must have exactly 4 options")
+
+                # Validate text questions
+                elif q["type"] == "text":
+                    if "reference_answer" not in q:
+                        raise ValueError(f"Text question {i+1} missing reference_answer")
+
+        except (json.JSONDecodeError, ValueError) as parse_error:
+            logger.error(f"Failed to parse quiz JSON: {parse_error}")
+            logger.error(f"Raw response: {quiz_text}")
+
+            # Fallback: generate simple text questions
+            questions = [
+                {
+                    "type": "text",
+                    "question": f"根據「{chunk_title}」的內容，請說明其核心概念。",
+                    "reference_answer": "請參考文本內容進行回答"
+                },
+                {
+                    "type": "text",
+                    "question": "這段文本對你的修行或生活有什麼啟發？",
+                    "reference_answer": "開放式回答，可結合個人經驗"
+                }
+            ]
+
         # Generate unique quiz ID
         quiz_id = f"quiz_{int(time.time())}_{uuid.uuid4().hex[:8]}"
-        
+
         computation_time = time.time() - start_time
-        
+
         return {
             "quiz_id": quiz_id,
             "questions": questions,
@@ -1345,7 +1585,7 @@ async def generate_quiz(request: QuizRequest):
             "computation_time": computation_time,
             "status": "success"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1354,91 +1594,237 @@ async def generate_quiz(request: QuizRequest):
 
 
 @app.post("/quiz/evaluate")
-async def evaluate_quiz_answers(request: QuizAnswerRequest):
-    """Evaluate user's quiz answers using LLM."""
+async def evaluate_quiz_answers(request: QuizAnswerRequest, http_request: Request):
+    """Evaluate user's mixed-format quiz answers (multiple choice + text) with scoring."""
     if not is_initialized or not rag_pipeline:
         raise HTTPException(
             status_code=503,
             detail="System not initialized. Please ensure Qdrant is running with initialized data. Run 'python init_collections.py all' if needed."
         )
-    
+
+    # Get user identification
+    user_info = await get_user_info(http_request)
+
     try:
         if not request.answers:
             raise HTTPException(
                 status_code=400,
                 detail="No answers provided."
             )
-        
-        # Get the reference chunk from cache (assuming it's still the same)
+
+        if len(request.answers) != len(request.questions):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Number of answers ({len(request.answers)}) does not match number of questions ({len(request.questions)})"
+            )
+
+        # Get the reference chunk from cache
         global last_query_cache
         if not last_query_cache or not last_query_cache.get("sources"):
             raise HTTPException(
                 status_code=400,
                 detail="Reference material no longer available."
             )
-        
+
         highest_chunk = last_query_cache.get("sources", [])[0]
-        chunk_content = highest_chunk.get("text", "")
+        chunk_content = highest_chunk.get("text", "") or highest_chunk.get("content", "")
         chunk_title = highest_chunk.get("title", "")
-        
-        # Create evaluation prompt
-        answers_text = "\n".join([f"答案{i+1}：{answer}" for i, answer in enumerate(request.answers)])
-        
-        evaluation_prompt = f"""請評估以下用戶對佛教文本理解問題的回答。
+
+        # Evaluate each answer
+        start_time = time.time()
+        evaluations = []
+        total_score = 0
+        max_score = 0
+
+        for i, (question, answer) in enumerate(zip(request.questions, request.answers)):
+            question_type = question.get("type")
+            question_text = question.get("question")
+            user_answer = answer.answer
+
+            if question_type == "multiple_choice":
+                # Auto-grade multiple choice
+                correct_answer = question.get("correct_answer")
+                explanation = question.get("explanation", "")
+                is_correct = user_answer.upper() == correct_answer.upper()
+                score = 1 if is_correct else 0
+                max_score += 1
+
+                evaluations.append({
+                    "question_index": i,
+                    "question_type": "multiple_choice",
+                    "question": question_text,
+                    "user_answer": user_answer,
+                    "correct_answer": correct_answer,
+                    "is_correct": is_correct,
+                    "score": score,
+                    "max_score": 1,
+                    "explanation": explanation,
+                    "feedback": "正確！" if is_correct else f"不正確。正確答案是 {correct_answer}。"
+                })
+
+                total_score += score
+
+            elif question_type == "text":
+                # LLM-based evaluation for text questions
+                reference_answer = question.get("reference_answer", "")
+
+                # Pre-check: Reject obviously insufficient answers
+                if len(user_answer) < 10:
+                    evaluations.append({
+                        "question_index": i,
+                        "question_type": "text",
+                        "question": question_text,
+                        "user_answer": user_answer,
+                        "reference_answer": reference_answer,
+                        "score": 0,
+                        "max_score": 5,
+                        "understanding_score": 0,
+                        "depth_score": 0,
+                        "expression_score": 0,
+                        "feedback": "回答過於簡短，未能展現對問題的理解與思考。請提供更完整的答案。",
+                        "strengths": "回答過於簡短，未見明顯優點",
+                        "improvements": "請認真閱讀問題，結合文本內容和個人理解，提供至少50字以上的完整回答。"
+                    })
+                    total_score += 0
+                    max_score += 5
+                    continue
+
+                evaluation_prompt = f"""請嚴格評估以下用戶對佛教文本問題的回答。
 
 參考文本標題：{chunk_title}
 
-參考文本內容：
-{chunk_content}
+參考文本內容（前500字）：
+{chunk_content[:500]}...
+
+問題：
+{question_text}
+
+參考答案要點：
+{reference_answer}
 
 用戶的回答：
-{answers_text}
+{user_answer}
 
-請根據以下標準評估：
-1. 理解準確性：用戶是否正確理解了文本的核心概念？
-2. 深度思考：回答是否展現了深入的思考和洞察？
-3. 佛學知識：是否適當運用了佛教術語和概念？
+**評分標準（總分5分，請嚴格評分）**：
 
-請為每個答案提供：
-- 評分（1-5分，5分最高）
-- 簡短評語（1-2句）
-- 鼓勵的話語
+1. **理解準確性（0-2分）**：
+   - 0分：完全未理解或答非所問（如「不知道」、「太難」、單字回答）
+   - 1分：僅有基本理解，未涉及核心概念
+   - 2分：準確理解文本核心概念，答案與問題相關
 
-最後提供整體評價和修行建議。
+2. **深度思考（0-2分）**：
+   - 0分：無任何思考，敷衍回答（如「好」、「ok」、過短回答）
+   - 1分：有基本思考但未深入，缺乏個人見解
+   - 2分：展現深入思考、結合個人經驗或洞察
 
-請用中文回覆，語氣要溫和且鼓勵性。"""
+3. **表達完整性（0-1分）**：
+   - 0分：回答過短（少於20字）、不完整、或語意不清
+   - 1分：表達清晰完整，邏輯連貫
 
-        # Evaluate using LLM
-        start_time = time.time()
-        llm = rag_pipeline.llm
-        evaluation_response = llm.invoke(evaluation_prompt)
-        
-        # Extract text from response
-        if hasattr(evaluation_response, 'content'):
-            evaluation_text = evaluation_response.content
+**重要提示**：
+- 對於敷衍回答（如「ok」、「好」、「太難」、單字）必須給0分
+- 回答字數少於20字通常無法獲得高分
+- 未提及參考答案要點的回答最多只能得1-2分
+- 務必嚴格評分，不要過度寬容
+
+請直接輸出JSON格式，包含以下欄位：
+{{
+  "score": 0,  // 總分 0-5（三項分數相加）
+  "understanding_score": 0,  // 理解準確性 0-2
+  "depth_score": 0,  // 深度思考 0-2
+  "expression_score": 0,  // 表達完整性 0-1
+  "feedback": "具體評語（2-3句，客觀指出問題）",
+  "strengths": "回答的優點（若無則說明「回答過於簡短，未見明顯優點」）",
+  "improvements": "具體改進建議（必須提供）"
+}}
+
+請用繁體中文回覆。"""
+
+                # Use LLM to evaluate
+                llm = rag_pipeline.llm
+                eval_response = llm.invoke(evaluation_prompt)
+
+                # Extract text from response
+                if hasattr(eval_response, 'content'):
+                    eval_text = eval_response.content
+                else:
+                    eval_text = str(eval_response)
+
+                # Parse JSON response
+                import json
+                import re
+
+                try:
+                    # Remove markdown code blocks if present
+                    eval_text_clean = re.sub(r'```json\s*|\s*```', '', eval_text).strip()
+
+                    # Try to find JSON object pattern
+                    json_match = re.search(r'\{[\s\S]*\}', eval_text_clean)
+                    if json_match:
+                        eval_text_clean = json_match.group(0)
+
+                    eval_result = json.loads(eval_text_clean)
+
+                    # Validate and extract scores
+                    text_score = eval_result.get("score", 3)
+                    understanding = eval_result.get("understanding_score", 1)
+                    depth = eval_result.get("depth_score", 1)
+                    expression = eval_result.get("expression_score", 1)
+                    feedback = eval_result.get("feedback", "感謝你的回答！")
+                    strengths = eval_result.get("strengths", "")
+                    improvements = eval_result.get("improvements", "")
+
+                except (json.JSONDecodeError, ValueError) as parse_error:
+                    logger.error(f"Failed to parse evaluation JSON: {parse_error}")
+                    logger.error(f"Raw response: {eval_text}")
+
+                    # Fallback scoring
+                    text_score = 3
+                    understanding = 1
+                    depth = 1
+                    expression = 1
+                    feedback = "感謝你的認真回答！繼續深入思考佛法的智慧。"
+                    strengths = "展現了學習的誠意"
+                    improvements = ""
+
+                evaluations.append({
+                    "question_index": i,
+                    "question_type": "text",
+                    "question": question_text,
+                    "user_answer": user_answer,
+                    "reference_answer": reference_answer,
+                    "score": text_score,
+                    "max_score": 5,
+                    "understanding_score": understanding,
+                    "depth_score": depth,
+                    "expression_score": expression,
+                    "feedback": feedback,
+                    "strengths": strengths,
+                    "improvements": improvements
+                })
+
+                total_score += text_score
+                max_score += 5
+
+        # Calculate percentage
+        percentage = (total_score / max_score * 100) if max_score > 0 else 0
+
+        # Overall feedback based on percentage
+        if percentage >= 90:
+            overall_grade = "優秀"
+            overall_feedback = "非常優秀！你對佛法的理解深刻且全面。"
+        elif percentage >= 75:
+            overall_grade = "良好"
+            overall_feedback = "很好！你展現了扎實的理解，繼續精進。"
+        elif percentage >= 60:
+            overall_grade = "及格"
+            overall_feedback = "不錯！在理解上有一定基礎，建議多閱讀相關文本。"
         else:
-            evaluation_text = str(evaluation_response)
-        
+            overall_grade = "需加強"
+            overall_feedback = "繼續努力！多花時間深入理解佛法的核心概念。"
+
         computation_time = time.time() - start_time
-        
-        # Store quiz attempt in practice journey (mock storage for now)
-        quiz_attempt = {
-            "quiz_id": request.quiz_id,
-            "user_id": request.user_id,
-            "answers": request.answers,
-            "evaluation": evaluation_text,
-            "reference_chunk": {
-                "title": chunk_title,
-                "chunk_id": highest_chunk.get("chunk_id", "")
-            },
-            "timestamp": datetime.now().isoformat(),
-            "computation_time": computation_time
-        }
-        
-        # TODO: In a real system, store this in a database
-        # For now, we'll just log it
-        logger.info(f"Quiz attempt logged for user {request.user_id}: {request.quiz_id}")
-        
+
         # Random Zen master response (10% chance)
         zen_master_response = None
         if random.random() < 0.1:  # 10% chance
@@ -1450,18 +1836,219 @@ async def evaluate_quiz_answers(request: QuizAnswerRequest):
                 "很好！聖嚴法師常說：「面對它、接受它、處理它、放下它。」願你在生活中實踐這份智慧。"
             ]
             zen_master_response = random.choice(zen_master_responses)
-        
+
+        # Save quiz attempt to database
+        attempt_id = None
+        try:
+            # Get user_id from JWT token if available
+            user_uuid = None
+            if user_info.get("user_email"):
+                # Try to get user_id from database
+                from auth import get_db_connection
+                try:
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute("SELECT id FROM users WHERE email = %s", (user_info["user_email"],))
+                    result = cur.fetchone()
+                    if result:
+                        user_uuid = result['id']
+                    conn.close()
+                except Exception as e:
+                    logger.warning(f"Could not get user_id: {e}")
+
+            attempt_id = save_quiz_attempt(
+                quiz_id=request.quiz_id,
+                user_id=user_uuid,
+                user_email=user_info.get("user_email") or "anonymous",
+                source_query=last_query_cache.get("query", ""),
+                reference_chunk_title=chunk_title,
+                reference_chunk_id=highest_chunk.get("chunk_id", ""),
+                questions=request.questions,
+                answers=[a.dict() for a in request.answers],
+                evaluations=evaluations,
+                total_score=total_score,
+                max_score=max_score,
+                percentage=percentage,
+                overall_grade=overall_grade,
+                overall_feedback=overall_feedback,
+                zen_master_response=zen_master_response,
+                time_spent_seconds=0,  # TODO: Get from frontend
+                computation_time=computation_time
+            )
+
+            logger.info(f"Saved quiz attempt {attempt_id} for {user_info.get('user_email', 'anonymous')}: Score {total_score}/{max_score}")
+
+            # Update achievements
+            if user_info.get("user_email") and user_info["user_email"] != "anonymous":
+                try:
+                    # Get current quiz count
+                    from db_helpers import get_db_connection
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute(
+                        "SELECT COUNT(*) as count FROM quiz_attempts WHERE user_email = %s",
+                        (user_info["user_email"],)
+                    )
+                    quiz_count = cur.fetchone()['count']
+                    conn.close()
+
+                    # Update quiz count achievements
+                    update_user_achievement(user_info["user_email"], "first_quiz", quiz_count)
+                    update_user_achievement(user_info["user_email"], "quiz_count_10", quiz_count)
+                    update_user_achievement(user_info["user_email"], "quiz_count_50", quiz_count)
+                    update_user_achievement(user_info["user_email"], "quiz_count_100", quiz_count)
+
+                    # Update perfect score achievement
+                    if percentage == 100:
+                        conn = get_db_connection()
+                        cur = conn.cursor()
+                        cur.execute(
+                            "SELECT COUNT(*) as count FROM quiz_attempts WHERE user_email = %s AND percentage = 100",
+                            (user_info["user_email"],)
+                        )
+                        perfect_count = cur.fetchone()['count']
+                        conn.close()
+
+                        update_user_achievement(user_info["user_email"], "perfect_score", perfect_count)
+                        update_user_achievement(user_info["user_email"], "perfect_score_3", perfect_count)
+
+                    # Check for master comments
+                    master_comment = check_and_create_master_comment(
+                        user_email=user_info["user_email"],
+                        user_id=user_uuid
+                    )
+                    if master_comment:
+                        logger.info(f"Created master comment: {master_comment['title']}")
+
+                except Exception as e:
+                    logger.error(f"Error updating achievements: {e}")
+
+        except Exception as e:
+            logger.error(f"Error saving quiz attempt to database: {e}")
+            # Continue even if database save fails
+
         return {
             "quiz_id": request.quiz_id,
-            "evaluation": evaluation_text,
+            "evaluations": evaluations,
+            "total_score": total_score,
+            "max_score": max_score,
+            "percentage": round(percentage, 2),
+            "overall_grade": overall_grade,
+            "overall_feedback": overall_feedback,
             "zen_master_response": zen_master_response,
             "practice_journey_logged": True,
             "computation_time": computation_time,
             "status": "success"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error evaluating quiz answers: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/quiz/history")
+async def get_quiz_history(
+    http_request: Request,
+    limit: int = 50,
+    offset: int = 0
+):
+    """Get paginated quiz history for the authenticated user."""
+    # Get user identification
+    user_info = await get_user_info(http_request)
+
+    if not user_info.get("user_email") or user_info["user_email"] == "anonymous":
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to view quiz history"
+        )
+
+    try:
+        from db_helpers import get_quiz_history
+
+        result = get_quiz_history(
+            user_email=user_info["user_email"],
+            limit=limit,
+            offset=offset
+        )
+
+        return {
+            "total": result["total"],
+            "limit": limit,
+            "offset": offset,
+            "quizzes": result["quizzes"],
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting quiz history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/quiz/history/{attempt_id}")
+async def get_quiz_attempt_detail(
+    attempt_id: int,
+    http_request: Request
+):
+    """Get detailed quiz attempt by ID."""
+    # Get user identification
+    user_info = await get_user_info(http_request)
+
+    if not user_info.get("user_email") or user_info["user_email"] == "anonymous":
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to view quiz details"
+        )
+
+    try:
+        from db_helpers import get_quiz_attempt_detail
+
+        result = get_quiz_attempt_detail(
+            attempt_id=attempt_id,
+            user_email=user_info["user_email"]
+        )
+
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Quiz attempt {attempt_id} not found"
+            )
+
+        return {
+            "quiz_attempt": result,
+            "status": "success"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting quiz attempt detail: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/quiz/statistics")
+async def get_quiz_statistics(http_request: Request):
+    """Get quiz statistics for the authenticated user."""
+    # Get user identification
+    user_info = await get_user_info(http_request)
+
+    if not user_info.get("user_email") or user_info["user_email"] == "anonymous":
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to view statistics"
+        )
+
+    try:
+        from db_helpers import get_quiz_statistics
+
+        stats = get_quiz_statistics(user_email=user_info["user_email"])
+
+        return {
+            "statistics": stats,
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting quiz statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
