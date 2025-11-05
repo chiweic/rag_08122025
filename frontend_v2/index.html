@@ -392,7 +392,8 @@
         <input id="q" type="text" placeholder="請問任何問題。輸入 @ 以提及。" class="flex-1 px-3 py-2 outline-none" />
         <button type="submit" class="ml-2 p-2 bg-teal-600 rounded-full text-white hover:bg-teal-700"><i data-lucide="mic" class="w-5 h-5"></i></button>
       </form>
-      <div class="max-w-2xl mx-auto mt-3 flex items-center justify-end">
+      <!-- Retrieval mode toggle hidden for production (internal debugging only) -->
+      <div class="max-w-2xl mx-auto mt-3 flex items-center justify-end" style="display: none;">
         <button id="retrievalModeToggle" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-teal-500 hover:bg-teal-50 transition-all text-sm">
           <i data-lucide="database" class="w-4 h-4"></i>
           <span id="retrievalModeLabel">檢索模式</span>
@@ -425,7 +426,8 @@
     </div>
 
     <div id="composer" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 hidden">
-      <div class="flex items-center justify-end mb-2">
+      <!-- Retrieval mode toggle hidden for production (internal debugging only) -->
+      <div class="flex items-center justify-end mb-2" style="display: none;">
         <button id="retrievalModeToggle2" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-teal-500 hover:bg-teal-50 transition-all text-sm shadow-sm">
           <i data-lucide="database" class="w-4 h-4"></i>
           <span id="retrievalModeLabel2">檢索模式</span>
