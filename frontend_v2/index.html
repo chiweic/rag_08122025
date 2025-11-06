@@ -1537,6 +1537,30 @@
       const token = localStorage.getItem('token');
       if (!token) {
         console.log('No token found, skipping quiz history load');
+
+        // Show login prompt in statistics
+        document.getElementById('statTotalQuizzes').textContent = '-';
+        document.getElementById('statAvgScore').textContent = '-';
+        document.getElementById('statBestScore').textContent = '-';
+        document.getElementById('statTopics').textContent = '-';
+
+        // Show login prompt in quiz history
+        const listDiv = document.getElementById('quizHistoryList');
+        listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
+          <i data-lucide="user-circle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+          <p class="font-semibold mb-2">請先登入查看學習歷程</p>
+          <p class="text-sm mb-4">登入後即可追蹤您的測驗記錄與學習進度</p>
+          <button onclick="document.getElementById('loginPanel').classList.add('active'); document.getElementById('journeyPanel').classList.remove('active'); document.getElementById('journeyBackdrop').classList.remove('active');"
+                  class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+            前往登入
+          </button>
+        </div>`;
+
+        // Clear grade distribution
+        document.getElementById('gradeDistribution').innerHTML = '';
+
+        // Refresh icons
+        if (window.lucide) { lucide.createIcons(); }
         return;
       }
 
@@ -1577,6 +1601,24 @@
         } else {
           // Statistics request failed
           console.error('Statistics request failed:', statsRes.status);
+
+          // Handle authentication errors (401)
+          if (statsRes.status === 401) {
+            localStorage.removeItem('token');  // Clear invalid token
+            const listDiv = document.getElementById('quizHistoryList');
+            listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
+              <i data-lucide="user-circle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+              <p class="font-semibold mb-2">登入已過期</p>
+              <p class="text-sm mb-4">請重新登入以查看學習歷程</p>
+              <button onclick="document.getElementById('loginPanel').classList.add('active'); document.getElementById('journeyPanel').classList.remove('active'); document.getElementById('journeyBackdrop').classList.remove('active');"
+                      class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                重新登入
+              </button>
+            </div>`;
+            if (window.lucide) { lucide.createIcons(); }
+            return;  // Exit early if auth failed
+          }
+
           document.getElementById('statTotalQuizzes').textContent = '-';
           document.getElementById('statAvgScore').textContent = '-';
           document.getElementById('statBestScore').textContent = '-';
@@ -1634,11 +1676,26 @@
           // Quiz history request failed
           console.error('Quiz history request failed:', historyRes.status);
           const listDiv = document.getElementById('quizHistoryList');
-          listDiv.innerHTML = `<div class="text-center text-red-500 py-8">
-            <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
-            <p>無法載入測驗記錄</p>
-            <p class="text-sm">請稍後再試</p>
-          </div>`;
+
+          // Handle authentication errors (401)
+          if (historyRes.status === 401) {
+            localStorage.removeItem('token');  // Clear invalid token
+            listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
+              <i data-lucide="user-circle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+              <p class="font-semibold mb-2">登入已過期</p>
+              <p class="text-sm mb-4">請重新登入以查看學習歷程</p>
+              <button onclick="document.getElementById('loginPanel').classList.add('active'); document.getElementById('journeyPanel').classList.remove('active'); document.getElementById('journeyBackdrop').classList.remove('active');"
+                      class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                重新登入
+              </button>
+            </div>`;
+          } else {
+            listDiv.innerHTML = `<div class="text-center text-red-500 py-8">
+              <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+              <p>無法載入測驗記錄</p>
+              <p class="text-sm">請稍後再試</p>
+            </div>`;
+          }
         }
 
         // Always refresh icons at the end
