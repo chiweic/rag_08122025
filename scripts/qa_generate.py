@@ -4,27 +4,29 @@
 import os
 import json
 import time
-import argparse
-from typing import List, Dict, Any, Optional, Iterable
+from typing import List, Dict, Any, Optional, Tuple
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from google import genai
-from pypdf import PdfReader  # pip install pypdf
 
-# ============= Config (override by CLI) =============
-MODEL_NAME         = "models/gemini-2.5-flash-lite"
-OUTPUT_JSONL       = "qa_results_batch.jsonl"
-PDF_ROOT           = "data"                 # where your PDFs live
-MAX_CONTEXT_CHARS  = 32_000                 # keep prompt safe for flash-lite
-TEMPERATURE        = 0.4                    # a bit creative, still grounded
-POLL_SECS          = 20                     # batch polling interval
-DISPLAY_NAME       = "topic-qa-batch"
+# ---------- config ----------
+OUTLINE_JSONL        = "fgqj_chap4_outline_results.jsonl"   # ← Stage 1 output
+QA_JSONL             = "fgqj_chap4_qa_results_with_refs.jsonl"    # ← This script's output
+MODEL_NAME           = "models/gemini-2.5-flash-lite"
+N_QA_PER_TOPIC       = 5
+TEMPERATURE          = 0.4
+MAX_RETRIES          = 3
+RETRY_SLEEP_S        = 3
+MAX_CONTEXT_CHARS    = 32_000   # keep prompt light; adjust up/down as you like
 
-# ======== Schemas ========
+# Where to find PDFs (keys in outline are original filenames)
+PDF_BASE_DIR         = "data"      # if outline has relative paths like "data/xxx.pdf", keep "."
+
+# ---------- models ----------
 class TopicQA(BaseModel):
-    question: str = Field(description="繁體中文問題")
-    answer:   str = Field(description="繁體中文答案")
-    evidence: str = Field(description="來源頁碼與 1–2 句短引文", default="")
+    question: str
+    answer: str
+    evidence: List[Dict[str, Any]]  # e.g., [{"page": 12, "quote": "..."}, ...]
 
 class DocumentTopic(BaseModel):
     topic_title: str
@@ -37,203 +39,119 @@ class OutlineRecord(BaseModel):
     document_title: str
     main_topics: List[DocumentTopic]
 
-# ===================== Utilities =====================
-def iter_jsonls(paths: List[str]) -> Iterable[Dict[str, Any]]:
-    for p in paths:
-        with open(p, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                yield json.loads(line)
-
-def safe_load_outline(rec: Dict[str, Any]) -> Optional[OutlineRecord]:
-    if "error" in rec:
-        return None
-    try:
-        return TypeAdapter(OutlineRecord).validate_python(rec)
-    except ValidationError:
-        if {"filename", "document_title", "main_topics"} <= set(rec.keys()):
-            try:
-                topics = [DocumentTopic(**t) for t in rec["main_topics"]]
-                return OutlineRecord(
-                    filename=rec["filename"],
-                    document_title=rec.get("document_title", ""),
-                    main_topics=topics,
-                )
-            except Exception:
-                return None
-        return None
-
-def extract_topic_text(pdf_path: str, start_page: int, end_page: int) -> str:
-    """
-    Extract plain text from 1-indexed [start_page, end_page] inclusive.
-    Falls back to empty string if anything fails.
-    """
-    try:
-        reader = PdfReader(pdf_path)
-        start = max(1, start_page)
-        end   = min(len(reader.pages), end_page)
-        if end < start:
-            return ""
-        parts = []
-        for i in range(start-1, end):
-            try:
-                parts.append(reader.pages[i].extract_text() or "")
-            except Exception:
-                parts.append("")
-        return "\n".join(parts).strip()
-    except Exception:
-        return ""
-
-def estimate_num_qas(topic_text: str, min_q=3, max_q=10) -> int:
-    # ~1 QA per 500 Han chars, bounded
-    n = max(min_q, min(max_q, len(topic_text) // 500))
-    return n
-
-def clamp(text: str, n: int) -> str:
-    return text[:n]
-
-# ================== Batch builder ==================
-def build_inline_requests(
-    outlines: List[OutlineRecord],
-    pdf_root: str,
-    max_context_chars: int,
-    base_temperature: float,
-    nqa_override: Optional[int],
-) -> List[dict]:
-    """Build inline GenerateContentRequest dicts; one per topic."""
-    sys_instr = (
-        "你是一位文件內容分析助教，請仔細閱讀提供的主題正文內容，"
-        "根據其中的具體敘述與關鍵觀念，產生繁體中文的高品質問答。"
-        "所有答案必須能在正文中找到明確依據，並於 evidence 欄中列出對應頁碼與 1 至 2 句短引文。"
-        "請忽略前言、序言、目錄與致謝等導言內容。"
-        "輸出為 JSON 陣列，每個元素含 question、answer、evidence 三個欄位，不可添加任何額外說明。"
-    )
-
-    reqs = []
-    for rec in outlines:
-        pdf_path = os.path.join(pdf_root, rec.filename)
-        for idx, t in enumerate(rec.main_topics):
-            # Extract topic text; fallback to summary
-            topic_text = ""
-            if os.path.exists(pdf_path):
-                topic_text = extract_topic_text(pdf_path, t.starting_page_number, t.ending_page_number)
-            if not topic_text:
-                topic_text = t.topic_summary or ""
-
-            topic_text = clamp(topic_text, max_context_chars)
-
-            # decide QA count (adaptive by content length, but overridable)
-            n_q = nqa_override if (nqa_override and nqa_override > 0) else estimate_num_qas(topic_text)
-
-            user_text = (
-                f"【文件標題】{rec.document_title}\n"
-                f"【檔名】{rec.filename}\n"
-                f"【主題】{t.topic_title}\n"
-                f"【頁碼範圍】{t.starting_page_number}-{t.ending_page_number}\n\n"
-                f"【主題摘要】\n{t.topic_summary}\n\n"
-                f"【主題正文文本】（僅能根據此內容回答）\n"
-                f"{topic_text}\n\n"
-                f"任務：請產生 {n_q} 組高品質問答（繁體中文）。答案必須能在正文中找到依據，"
-                f"並於 evidence 欄中列出對應頁碼與 1~2 句短引文。"
-            )
-
-            reqs.append({
-                "contents": [{
-                    "role": "user",
-                    "parts": [{"text": user_text}],
-                }],
-                "config": {
-                    "system_instruction": {"parts": [{"text": sys_instr}]},
-                    "response_mime_type": "application/json",
-                    # If your SDK supports it well, you can uncomment next line:
-                    # "response_schema": List[TopicQA],
-                    "temperature": float(base_temperature),
-                },
-                "metadata": {
-                    # unique key for mapping back
-                    "key": f"{rec.filename}::#{idx}::{t.topic_title[:60]}"
-                },
-            })
-    return reqs
-
-from dotenv import load_dotenv
-# ================== Batch runner ==================
-def run_batch_qa(
-    outline_jsonls: List[str],
-    pdf_root: str = PDF_ROOT,
-    output_jsonl: str = OUTPUT_JSONL,
-    model_name: str = MODEL_NAME,
-    max_context_chars: int = MAX_CONTEXT_CHARS,
-    temperature: float = TEMPERATURE,
-    nqa: Optional[int] = None,
-    display_name: str = DISPLAY_NAME,
-    poll_secs: int = POLL_SECS,
-):
-    load_dotenv()  # Load .env if exists
-    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
-    # Load outlines
-    outlines: List[OutlineRecord] = []
-    for rec in iter_jsonls(outline_jsonls):
-        orc = safe_load_outline(rec)
-        if orc:
-            outlines.append(orc)
-
-    if not outlines:
-        print("No valid outline records found. Exiting.")
-        return
-
-    # Build inline requests (one per topic)
-    requests = build_inline_requests(
-        outlines=outlines,
-        pdf_root=pdf_root,
-        max_context_chars=max_context_chars,
-        base_temperature=temperature,
-        nqa_override=nqa,
-    )
-
-    print(f"Submitting Batch with {len(requests)} topic requests...")
-    job = client.batches.create(
-        model=model_name,
-        src=requests,
-        config={"display_name": display_name},
-    )
-    print(f" -> Job: {job.name}")
-
-    # Poll to completion
-    terminal = {"JOB_STATE_SUCCEEDED", "JOB_STATE_FAILED", "JOB_STATE_CANCELLED", "JOB_STATE_EXPIRED"}
-    while True:
-        job = client.batches.get(name=job.name)
-        state = getattr(job.state, "name", str(job.state))
-        print(f"   state: {state}")
-        if state in terminal:
-            break
-        time.sleep(poll_secs)
-
-    if getattr(job.state, "name", "") != "JOB_STATE_SUCCEEDED":
-        print(f"Batch ended with state: {getattr(job.state, 'name', job.state)}")
-        return
-
-    # Parse results
-    inlined = getattr(job.dest, "inlined_responses", []) or []
-    adapter = TypeAdapter(List[TopicQA])
-
-    with open(output_jsonl, "w", encoding="utf-8") as outf:
-        for resp in inlined:
-            meta_key = getattr(resp, "metadata", {}).get("key", "")
-            if getattr(resp, "error", None):
-                outf.write(json.dumps({"key": meta_key, "error": str(resp.error)}, ensure_ascii=False) + "\n")
+# ---------- utils ----------
+def iter_jsonl(path: str):
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
                 continue
+            yield json.loads(line)
 
+def clamp(s: str, limit: int) -> str:
+    if len(s) <= limit:
+        return s
+    # try to cut at paragraph boundary
+    cut = s.rfind("\n\n", 0, limit)
+    if cut < 0:
+        cut = limit
+    return s[:cut]
+
+def estimate_num_qas(topic_text: str) -> int:
+    n_chars = len(topic_text)
+    # ~1 QA per 300–500 Chinese characters, bounded between 3 and 10
+    return max(3, min(10, n_chars // 400))
+
+# ---------- PDF text extraction (PyMuPDF) ----------
+def extract_text_from_pdf(
+    pdf_path: str, start_page_1based: int, end_page_1based: int
+) -> Tuple[str, List[int]]:
+    """
+    returns (text, page_index_list) for the inclusive 1-based range.
+    page_index_list is the actual 1-based pages we read (for sanity logs).
+    """
+    try:
+        import fitz  # PyMuPDF
+    except ImportError as e:
+        raise RuntimeError(
+            "PyMuPDF not installed. Please `pip install pymupdf`."
+        ) from e
+
+    # 
+    #if not os.path.isabs(pdf_path):
+    #    pdf_path = os.path.join(PDF_BASE_DIR, pdf_path)
+
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(pdf_path)
+
+    start_i = max(1, start_page_1based)
+    end_i   = max(start_i, end_page_1based)
+
+    txt_chunks: List[str] = []
+    with fitz.open(pdf_path) as doc:
+        total = len(doc)
+        start_i = min(start_i, total)
+        end_i   = min(end_i, total)
+        for p in range(start_i - 1, end_i):
+            page = doc[p]
+            # 'text' gives layout-aware lines; 'textpage.extractTEXT()' similar
+            txt = page.get_text("text") or ""
+            txt_chunks.append(txt)
+
+    text = "\n".join(txt_chunks)
+    return text, list(range(start_i, end_i + 1))
+
+# ---------- LLM call ----------
+def generate_qas_for_topic(
+    client: genai.Client,
+    document_title: str,
+    filename: str,
+    topic: DocumentTopic,
+    topic_text: str,
+    n_pairs: int = N_QA_PER_TOPIC,
+    model_name: str = MODEL_NAME,
+    temperature: float = TEMPERATURE,
+) -> List[TopicQA]:
+
+    system_instruction = (
+        "你是一位嚴謹的知識助教。根據提供的『主題正文文本』產生與其高度相關的問答組。"
+        "請務必以繁體中文撰寫、嚴格根據文本內容作答，不要臆測或引入外部資訊。"
+        "每組問答需提供至少一則證據（包含頁碼與短句式引文），頁碼請使用提供的原始 PDF 頁碼。"
+        "輸出為 JSON 陣列，每個元素包含 question, answer, evidence；"
+        "evidence 為陣列，每個物件包含 page 與 quote（不超過 200 字）。"
+        "不要輸出任何 JSON 以外的文字。"
+    )
+
+    prompt = (
+        f"【文件標題】{document_title}\n"
+        f"【檔名】{filename}\n"
+        f"【主題】{topic.topic_title}\n"
+        f"【頁碼範圍】{topic.starting_page_number}-{topic.ending_page_number}\n\n"
+        f"【主題摘要】\n{topic.topic_summary}\n\n"
+        f"【主題正文文本】（僅能根據此內容回答）\n"
+        f"{clamp(topic_text, MAX_CONTEXT_CHARS)}\n\n"
+        f"任務：請產生 {n_pairs} 組高品質問答（繁體中文）。答案必須能在正文中找到依據，"
+        f"並於 evidence 中列出對應頁碼與 1~2 句短引文。"
+    )
+
+    last_err: Optional[Exception] = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = client.models.generate_content(
+                model=model_name,
+                contents=[{"role": "user", "parts": [{"text": prompt}]}],
+                config={
+                    "system_instruction": {"parts": [{"text": system_instruction}]},
+                    "response_mime_type": "application/json",
+                    "temperature": float(temperature),
+                },
+            )
             payload = None
-            # Try text first
             try:
-                payload = json.loads(resp.response.text)
+                payload = json.loads(resp.text)
             except Exception:
                 try:
-                    parts = resp.response.candidates[0].content.parts
+                    parts = resp.candidates[0].content.parts
                     for p in parts:
                         if hasattr(p, "text"):
                             try:
@@ -245,45 +163,104 @@ def run_batch_qa(
                     pass
 
             if payload is None:
-                outf.write(json.dumps({"key": meta_key, "error": "no_json"}, ensure_ascii=False) + "\n")
+                raise ValueError("回覆中找不到可解析的 JSON。")
+
+            adapter = TypeAdapter(List[TopicQA])
+            qas: List[TopicQA] = adapter.validate_python(payload)
+            return qas
+
+        except Exception as e:
+            last_err = e
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_SLEEP_S)
+            else:
+                raise
+
+    if last_err:
+        raise last_err
+    return []
+
+from dotenv import load_dotenv
+# ---------- main ----------
+def main():
+    load_dotenv()
+    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+
+    with open(QA_JSONL, "w", encoding="utf-8") as out_f:
+        for rec in iter_jsonl(OUTLINE_JSONL):
+            # skip error rows
+            if "error" in rec:
                 continue
 
+            # tolerate slightly different shapes
             try:
-                qas = adapter.validate_python(payload)
-                rec = {"key": meta_key, "qas": [q.model_dump() for q in qas]}
-            except Exception as e:
-                rec = {"key": meta_key, "error": f"parse_error: {e}", "raw": payload}
+                outline = TypeAdapter(OutlineRecord).validate_python(rec)
+            except ValidationError:
+                if "filename" in rec and "main_topics" in rec:
+                    outline = OutlineRecord(
+                        filename=rec["filename"],
+                        document_title=rec.get("document_title", ""),
+                        main_topics=[DocumentTopic(**t) for t in rec.get("main_topics", [])],
+                    )
+                else:
+                    continue
 
-            outf.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            # locate the pdf – outline.filename may be relative/pathlike already
+            pdf_path = outline.filename
+            if not os.path.isabs(pdf_path) and not os.path.exists(pdf_path):
+                # try prefix base dir if the filename is relative like "data/xxx.pdf"
+                candidate = os.path.join(PDF_BASE_DIR, pdf_path)
+                if os.path.exists(candidate):
+                    pdf_path = candidate
 
-    print(f"✅ Wrote {output_jsonl}")
+            for topic in outline.main_topics:
+                try:
+                    
+                    # extract topic text by page range (inclusive)
+                    topic_text, pages_used = extract_text_from_pdf(
+                        pdf_path,
+                        topic.starting_page_number,
+                        topic.ending_page_number
+                    )
 
-# ================== CLI ==================
-def main():
-    ap = argparse.ArgumentParser(description="Batch QA generation (evidence-based) from outline JSONLs")
-    ap.add_argument("--outline", "-i", nargs="+", required=True,
-                    help="One or more Stage-1 outline JSONL files")
-    ap.add_argument("--pdf_root", default=PDF_ROOT, help="Directory where PDFs are stored")
-    ap.add_argument("--out", default=OUTPUT_JSONL, help="Output QA JSONL path")
-    ap.add_argument("--model", default=MODEL_NAME, help="Gemini model id")
-    ap.add_argument("--max_chars", type=int, default=MAX_CONTEXT_CHARS, help="Max chars per topic context")
-    ap.add_argument("--temp", type=float, default=TEMPERATURE, help="Temperature for QA generation")
-    ap.add_argument("--nqa", type=int, default=None, help="Override QA count per topic (otherwise adaptive)")
-    ap.add_argument("--name", default=DISPLAY_NAME, help="Batch display name")
-    ap.add_argument("--poll", type=int, default=POLL_SECS, help="Polling interval seconds")
-    args = ap.parse_args()
+                    if not topic_text.strip():
+                        raise ValueError("抽取文本為空，可能為影像掃描 PDF 或無可用文字。")
 
-    run_batch_qa(
-        outline_jsonls=args.outline,
-        pdf_root=args.pdf_root,
-        output_jsonl=args.out,
-        model_name=args.model,
-        max_context_chars=args.max_chars,
-        temperature=args.temp,
-        nqa=args.nqa,
-        display_name=args.name,
-        poll_secs=args.poll,
-    )
+                    n_qas = estimate_num_qas(topic_text)
+                    print(f"產生 {n_qas} 組問答：{outline.filename} - {topic.topic_title} (頁 {topic.starting_page_number}-{topic.ending_page_number})")
+
+                    qas = generate_qas_for_topic(
+                        client=client,
+                        document_title=outline.document_title,
+                        filename=outline.filename,
+                        topic=topic,
+                        topic_text=topic_text,
+                        n_pairs=n_qas,
+                        model_name=MODEL_NAME,
+                        temperature=TEMPERATURE,
+                    )
+
+                    record = {
+                        "filename": outline.filename,
+                        "document_title": outline.document_title,
+                        "topic_title": topic.topic_title,
+                        "page_range": [topic.starting_page_number, topic.ending_page_number],
+                        "pages_used": pages_used,
+                        "qas": [qa.model_dump() for qa in qas],
+                    }
+                    out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+                except Exception as e:
+                    record = {
+                        "filename": outline.filename,
+                        "document_title": outline.document_title,
+                        "topic_title": topic.topic_title,
+                        "page_range": [topic.starting_page_number, topic.ending_page_number],
+                        "error": str(e),
+                    }
+                    out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    print(f"✅ 已輸出：{QA_JSONL}")
 
 if __name__ == "__main__":
     main()
