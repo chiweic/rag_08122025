@@ -145,3 +145,5 @@ ADMIN_CONSOLE_README.md
 data/
 *.jsonl
 mobile/
+outlines/
+qa_pairs/

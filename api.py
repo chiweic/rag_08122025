@@ -285,12 +285,15 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+# Note: Capacitor apps may send requests from capacitor://, ionic://, or file:// origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Mount static files for frontend

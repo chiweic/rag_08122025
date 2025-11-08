@@ -2,12 +2,84 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
+  <!-- 🔧 Mobile Responsiveness & Theme -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="color-scheme" content="light" />
+  <!-- 📱 Progressive Web App (PWA) Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>學佛入門</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body{background:#f9fafb;color:#1f2937;overflow-y:auto;}
+    /* 🔧 Mobile patch: 全域安全區、觸控、排版 */
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --space: clamp(12px, 3vw, 20px);
+      --text: clamp(14px, 2.5vw, 18px);
+    }
+
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background:#f9fafb;
+      color:#1f2937;
+      overflow-y:auto;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    /* 🔳 Dynamic viewport height - prevents keyboard from obscuring content */
+    @supports (height: 100dvh) {
+      html, body {
+        min-height: 100dvh;
+      }
+    }
+
+    /* 🔳 Touch optimizations for buttons only (not inputs to avoid breaking forms) */
+    button, a[role="button"] {
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+      cursor: pointer;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* 🔳 Ensure nav buttons are clickable/tappable */
+    .nav-btn {
+      pointer-events: auto;
+      touch-action: manipulation;
+    }
+
+    /* 🔳 Ensure text inputs have proper visibility and stay light */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+      background-color: transparent;
+      color: #1f2937 !important;
+      -webkit-text-fill-color: #1f2937 !important;
+      opacity: 1 !important;
+    }
+
+    /* 🔳 Prevent auto-zoom on iOS when focusing inputs */
+    @media screen and (max-width: 768px) {
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+    }
     .related-btn{font-size:.8rem;line-height:1rem;color:#6b7280;text-align:left;width:100%;border-bottom:1px solid #f3f4f6;padding:2px 0;transition:all .15s ease}
     .related-btn:hover{color:#0f766e;background:#f0fdfa}
     .tab-btn{
@@ -517,18 +589,43 @@
     const registerSubmit=document.getElementById('registerSubmit');
     const userNameLabel=document.getElementById('userName');
 
-    // Auto-detect API base URL from current location
-    // If accessing via domain (e.g., api.changpt.org), use same origin
-    // Otherwise fall back to localhost
-    const API_BASE_URL = window.API_BASE_URL || (() => {
-      const hostname = window.location.hostname;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:8000';
-      }
-      // For production domains, use same origin (preserves https/http and port)
-      return window.location.origin;
-    })();
+    // API base URL with Cloudflare Tunnel mapping
+    // Cloudflare Tunnel maps api.changpt.org → localhost:8000 for development
+    // Allows temporary override via localStorage or injected global for testing
+    // Usage: localStorage.setItem('API_BASE_URL_OVERRIDE', 'https://staging.example.com')
+    const API_BASE_URL =
+      window.API_BASE_URL ||
+      localStorage.getItem('API_BASE_URL_OVERRIDE') ||
+      'https://api.changpt.org';
+
     console.log(`🔗 API Base URL: ${API_BASE_URL}`);
+    console.log(`📱 User Agent: ${navigator.userAgent}`);
+    console.log(`🌐 Origin: ${window.location.origin}`);
+
+    // Debug: Log all touch/click events to help diagnose mobile issues
+    if (window.location.protocol === 'capacitor:') {
+      console.log('📱 Running in Capacitor app - enabling touch debugging');
+      document.addEventListener('touchstart', (e) => {
+        const target = e.target;
+        console.log('👆 Touch on:', target.tagName, target.id || target.className);
+      }, { passive: true });
+    }
+
+    // Helper function for fetch with better error handling
+    async function apiFetch(url, options = {}) {
+      try {
+        console.log(`🌐 Fetching: ${url}`);
+        const response = await fetch(url, options);
+        console.log(`✅ Response: ${response.status} ${response.statusText}`);
+        return response;
+      } catch (error) {
+        console.error(`❌ Fetch failed for ${url}:`, error);
+        console.error(`   Error type: ${error.name}`);
+        console.error(`   Error message: ${error.message}`);
+        throw error;
+      }
+    }
+
     let authToken=localStorage.getItem('authToken');
     let currentUser=null;
     let retrievalMode=false; // Toggle between /query and /retrieve endpoints
@@ -1490,10 +1587,28 @@
       aboutPanel.classList.remove('active');
     });
 
-    loginBtn.addEventListener('click',()=>{
+    // Login button with touch and click support for mobile
+    function openLoginPanel() {
+      console.log('🔐 Opening login panel');
+      console.log('   loginPanel classes before:', loginPanel.className);
       loginPanel.classList.add('active');
       registerPanel.classList.remove('active');
+      console.log('   loginPanel classes after:', loginPanel.className);
       if(window.lucide){ lucide.createIcons(); }
+    }
+
+    loginBtn.addEventListener('click',(e)=>{
+      console.log('🔐 Login button CLICK event');
+      e.preventDefault();
+      e.stopPropagation();
+      openLoginPanel();
+    });
+
+    loginBtn.addEventListener('touchend',(e)=>{
+      console.log('🔐 Login button TOUCHEND event');
+      e.preventDefault();
+      e.stopPropagation();
+      openLoginPanel();
     });
 
     closeLogin.addEventListener('click',()=>{
@@ -1534,9 +1649,13 @@
 
     // Load quiz history and statistics
     async function loadQuizHistory() {
-      const token = localStorage.getItem('token');
+      console.log('🔄 loadQuizHistory() called');
+      const token = localStorage.getItem('authToken');
+      console.log('   Token found:', !!token);
+      console.log('   Token value (first 20 chars):', token ? token.substring(0, 20) + '...' : 'null');
+
       if (!token) {
-        console.log('No token found, skipping quiz history load');
+        console.log('❌ No authToken found, showing login prompt');
 
         // Show login prompt in statistics
         document.getElementById('statTotalQuizzes').textContent = '-';
@@ -1564,14 +1683,15 @@
         return;
       }
 
-      console.log('Loading quiz history...');
+      console.log('✅ Token exists, loading quiz history from API...');
 
       try {
         // Load statistics
+        console.log('📊 Fetching statistics:', `${API_BASE_URL}/quiz/statistics`);
         const statsRes = await fetch(`${API_BASE_URL}/quiz/statistics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        console.log('Statistics response:', statsRes.status);
+        console.log('📊 Statistics response:', statsRes.status, statsRes.statusText);
         if (statsRes.ok) {
           const {statistics} = await statsRes.json();
           console.log('Statistics data:', statistics);
@@ -1604,7 +1724,7 @@
 
           // Handle authentication errors (401)
           if (statsRes.status === 401) {
-            localStorage.removeItem('token');  // Clear invalid token
+            localStorage.removeItem('authToken');  // Clear invalid token
             const listDiv = document.getElementById('quizHistoryList');
             listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
               <i data-lucide="user-circle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
@@ -1679,7 +1799,7 @@
 
           // Handle authentication errors (401)
           if (historyRes.status === 401) {
-            localStorage.removeItem('token');  // Clear invalid token
+            localStorage.removeItem('authToken');  // Clear invalid token
             listDiv.innerHTML = `<div class="text-center text-gray-500 py-8">
               <i data-lucide="user-circle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
               <p class="font-semibold mb-2">登入已過期</p>
@@ -1727,6 +1847,9 @@
     }
 
     journeyMenuBtn.addEventListener('click',()=>{
+      console.log('📖 Opening personal journey panel...');
+      console.log('   authToken present:', !!localStorage.getItem('authToken'));
+      console.log('   currentUser:', currentUser ? currentUser.email : 'null');
       journeyPanel.classList.add('active');
       journeyBackdrop.classList.add('active');
       userDropdown.style.display='none';

@@ -1,0 +1,27 @@
+{
+  "appId": "org.changpt.ddmrag",
+  "appName": "學佛入門",
+  "webDir": "frontend_v2",
+  "server": {
+    "url": "https://api.changpt.org",
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

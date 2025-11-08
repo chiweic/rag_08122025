@@ -1,7 +1,8 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import Optional, Literal
+from pydantic import Field, field_validator, ValidationInfo
+from typing import Optional, Literal, Union
 import os
+import json
 from dotenv import load_dotenv
 
 # Force reload .env with override=True to ensure latest values are used
@@ -54,14 +55,25 @@ class Settings(BaseSettings):
     # API Configuration
     api_host: str = Field(default="0.0.0.0", env="API_HOST")
     api_port: int = Field(default=8000, env="API_PORT")
-    cors_origins: list[str] = Field(
+    cors_origins: Union[str, list[str]] = Field(
         default=["*"], env="CORS_ORIGINS"
     )
-    
+
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from comma-separated string or JSON array."""
+        if isinstance(v, str):
+            # Split by comma and strip whitespace
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
+        if isinstance(v, list):
+            return v
+        return ["*"]  # Fallback to allow all
+
     # Processing
     max_workers: int = Field(default=4, env="MAX_WORKERS")
     batch_size: int = Field(default=100, env="BATCH_SIZE")
-    
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
