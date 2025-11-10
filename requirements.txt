@@ -21,11 +21,13 @@ torch>=2.0.0
 # LLM Providers
 openai==1.57.0
 google-generativeai==0.8.3
+dashscope>=1.19.0  # Alibaba Cloud DashScope SDK for TTS
 
 # Utilities
 numpy==1.26.4
 tqdm==4.67.1
 python-multipart==0.0.18
+opencc-python-reimplemented==0.1.7  # Simplified to Traditional Chinese conversion
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0

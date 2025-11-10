@@ -39,6 +39,7 @@ import glob
 import argparse
 from openai import OpenAI
 import time
+from opencc import OpenCC  # Simplified to Traditional Chinese conversion
 
 # ================================
 # 配置日誌
@@ -54,6 +55,12 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# ================================
+# Chinese Conversion
+# ================================
+# Initialize OpenCC converter (Simplified to Traditional Chinese)
+cc = OpenCC('s2t')  # s2t = Simplified to Traditional
 
 # ================================
 # Pydantic 資料模型
@@ -378,6 +385,8 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
     """
     Load PDF and retain page number and character position mapping.
 
+    All text is automatically converted to Traditional Chinese to ensure consistency.
+
     This function extracts text from each page and builds a mapping between
     character positions in the full text and their corresponding page numbers.
     This mapping is essential for chunking while preserving accurate page numbers.
@@ -387,9 +396,9 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
 
     Returns:
         Dict with keys:
-            - 'full_text': Complete document text (pages joined with \n\n)
+            - 'full_text': Complete document text in Traditional Chinese (pages joined with \n\n)
             - 'pages': List of page info dicts with keys:
-                - 'text': Page text content
+                - 'text': Page text content in Traditional Chinese
                 - 'page_num': 1-based page number
                 - 'start_char': Character position where page starts in full_text
                 - 'end_char': Character position where page ends in full_text
@@ -408,7 +417,10 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
             current_char_pos = 0
 
             for page_num, page in enumerate(doc, start=1):
+                # Extract text and convert to Traditional Chinese
                 text = page.get_text()
+                text = cc.convert(text)  # Simplified -> Traditional Chinese
+
                 start_char = current_char_pos
                 end_char = current_char_pos + len(text)
 
@@ -777,7 +789,8 @@ def main():
         "2. 所有字符串必須用雙引號包圍\n"
         "3. 確保所有括號正確閉合\n"
         "4. 沒有未終止的字符串\n"
-        "5. 不要包含 JSON 之外的任何文字\n\n"
+        "5, 所有輸出必須使用繁體中文\n"
+        "6. 不要包含 JSON 之外的任何文字\n\n"
         
         "對於每個主題，請提供：\n"
         "- topic_title: 主題正式標題\n"
