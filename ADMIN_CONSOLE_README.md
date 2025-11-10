@@ -12,8 +12,8 @@ The Admin Console provides real-time monitoring and analytics for the DDM RAG sy
 The admin console is protected with HTTP Basic Authentication. When you access the URL, your browser will prompt for credentials.
 
 **Default Credentials:**
-- Username: `admin`
-- Password: `ddm_admin_2025`
+- Username: ``
+- Password: ``
 
 ⚠️ **IMPORTANT**: Change the default password in production!
 
@@ -63,7 +63,7 @@ ADMIN_PASSWORD=your_secure_password
 
 Use the `-u` flag with curl to provide credentials:
 ```bash
-curl -u admin:ddm_admin_2025 http://localhost:8000/admin/analytics/realtime
+curl -u x:y http://localhost:8000/admin/analytics/realtime
 ```
 
 ### 1. Real-time Analytics
