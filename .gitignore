@@ -149,3 +149,7 @@ outlines/
 qa_pairs/
 podcasts/
 podcast_audio/
+raw_data/
+video_transcripts/
+reconstructed/
+audio_outlines
