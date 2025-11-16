@@ -15,10 +15,13 @@ Key Features:
 - Progress logging to file and console
 
 Usage:
-    # Using default provider (deepseek)
+    # Using default provider (deepseek) with PDF
     python llm_topic_detect.py --pdf data/book.pdf
 
-    # Using specific provider
+    # Using MinerU JSON output
+    python llm_topic_detect.py --pdf mineru_output/zh/book.json
+
+    # Using specific provider with wildcard
     python llm_topic_detect.py --pdf "data/*.pdf" --provider openai
 
     # With custom output directory
@@ -40,6 +43,7 @@ import argparse
 from openai import OpenAI
 import time
 from opencc import OpenCC  # Simplified to Traditional Chinese conversion
+from pathlib import Path
 
 # ================================
 # 配置日誌
@@ -451,6 +455,147 @@ def extract_text_by_page_range(start_page: int, end_page: int, pages_info: List[
 # ================================
 # PDF Processing Functions
 # ================================
+def load_mineru_json(json_path: str) -> Dict[str, Any]:
+    """
+    Load MinerU JSON output and convert to load_pdf_with_page_info format.
+
+    Args:
+        json_path: Path to MinerU JSON file
+
+    Returns:
+        Dict with keys:
+            - 'full_text': Complete document text with page markers (e.g., [PDF_PAGE_1], [PDF_PAGE_2])
+            - 'pages': List of page info dicts with keys:
+                - 'text': Page text content (without markers)
+                - 'page_num': 1-based page number
+                - 'start_char': Character position where page starts in full_text
+                - 'end_char': Character position where page ends in full_text
+            - 'total_pages': Total number of pages
+
+    Raises:
+        FileNotFoundError: If JSON file doesn't exist
+        ValueError: If JSON structure is invalid
+    """
+    json_path = Path(json_path)
+    if not json_path.exists():
+        raise FileNotFoundError(f"MinerU JSON file not found: {json_path}")
+
+    # Load JSON
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Extract content_list from the first document in results
+    content_list = None
+    for doc_name, doc_data in data.get('results', {}).items():
+        if 'content_list' in doc_data:
+            content_list = json.loads(doc_data['content_list'])
+            break
+
+    if content_list is None:
+        raise ValueError(f"No content_list found in MinerU JSON: {json_path}")
+
+    # Group content blocks by page_idx
+    pages_dict = {}
+    for block in content_list:
+        page_idx = block.get('page_idx', -1)
+        if page_idx == -1:
+            continue
+
+        if page_idx not in pages_dict:
+            pages_dict[page_idx] = []
+
+        # Only include text blocks
+        if block.get('type') == 'text':
+            text = block.get('text', '')
+            if text:
+                text = cc.convert(text)  # Simplified -> Traditional Chinese
+                pages_dict[page_idx].append(text)
+
+    # Build pages list with character positions
+    pages = []
+    full_text_parts = []
+    current_pos = 0
+
+    # Sort page indices to ensure correct order
+    sorted_page_indices = sorted(pages_dict.keys())
+
+    for page_idx in sorted_page_indices:
+        page_num = page_idx + 1  # Convert 0-indexed to 1-based
+
+        # Add page marker
+        page_marker = f"[PDF_PAGE_{page_num}]\n"
+        full_text_parts.append(page_marker)
+        current_pos += len(page_marker)
+
+        # Combine text blocks for this page
+        page_text = '\n'.join(pages_dict[page_idx])
+
+        # Record start position
+        start_char = current_pos
+
+        # Add page text
+        full_text_parts.append(page_text)
+        current_pos += len(page_text)
+
+        # Add newline between pages
+        full_text_parts.append('\n')
+        current_pos += 1
+
+        # Record end position (before the newline)
+        end_char = current_pos - 1
+
+        # Add page info
+        pages.append({
+            'text': page_text,
+            'page_num': page_num,
+            'start_char': start_char,
+            'end_char': end_char
+        })
+
+    # Build full text
+    full_text = ''.join(full_text_parts)
+
+    return {
+        'full_text': full_text,
+        'pages': pages,
+        'total_pages': len(pages)
+    }
+
+
+def load_document_auto(fname: str, remove_headers: bool = True) -> Dict[str, Any]:
+    """
+    Automatically detect and load document from either PDF or MinerU JSON format.
+
+    Args:
+        fname: Path to PDF file or MinerU JSON file
+        remove_headers: If True and loading PDF, attempt to remove headers/footers (ignored for JSON)
+
+    Returns:
+        Dict with same format as load_pdf_with_page_info():
+            - 'full_text': Complete document text with page markers
+            - 'pages': List of page info dicts
+            - 'total_pages': Total number of pages
+
+    Raises:
+        ValueError: If file extension is not .pdf or .json
+        FileNotFoundError: If file doesn't exist
+    """
+    fname_path = Path(fname)
+
+    if not fname_path.exists():
+        raise FileNotFoundError(f"Document file not found: {fname}")
+
+    # Detect file type by extension
+    if fname_path.suffix.lower() == '.json':
+        logger.info(f"Loading MinerU JSON: {fname}")
+        return load_mineru_json(fname)
+    elif fname_path.suffix.lower() == '.pdf':
+        logger.info(f"Loading PDF: {fname}")
+        return load_pdf_with_page_info(fname, remove_headers=remove_headers)
+    else:
+        raise ValueError(f"Unsupported file type: {fname_path.suffix}. Only .pdf and .json are supported.")
+
+
 def load_pdf_with_page_info(fname: str, remove_headers: bool = True) -> Dict[str, Any]:
     """
     Load PDF and retain page number and character position mapping.
@@ -717,10 +862,10 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
         ...     print(f"Found {len(outline.main_topics)} topics")
     """
     try:
-        logger.info(f"開始處理 PDF 文件：{pdf_file}")
-        
-        # 1) 載入 PDF 並獲取頁碼資訊
-        pdf_info = load_pdf_with_page_info(pdf_file)
+        logger.info(f"開始處理文件：{pdf_file}")
+
+        # 1) 載入文件（自動偵測 PDF 或 MinerU JSON）
+        pdf_info = load_document_auto(pdf_file)
         logger.info(f"載入完成，共 {pdf_info['total_pages']} 頁，{len(pdf_info['full_text'])} 字符")
         
         # 2) 分塊處理
@@ -865,7 +1010,7 @@ def main():
     parser = argparse.ArgumentParser(description="PDF 主題提取工具（修復 JSON 錯誤和主題合併問題）")
     
     parser.add_argument("--pdf", type=str, required=True,
-                       help="PDF 檔案路徑或通配符模式（例如 data/*.pdf）")
+                       help="PDF 檔案路徑、MinerU JSON 路徑或通配符模式（例如 data/*.pdf 或 mineru_output/zh/*.json）")
     parser.add_argument("--out_dir", type=str, default="outlines",
                        help="輸出 JSONL 目錄路徑 (預設：outlines)")
     parser.add_argument("--log_level", type=str, default="INFO",
