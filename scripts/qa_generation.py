@@ -7,7 +7,7 @@ It supports multiple LLM providers (DeepSeek, OpenAI, DashScope, Gemini, local v
 and extracts evidence-based Q&As with page references.
 
 This is Stage 2 of the RAG data preparation pipeline:
-    Stage 1: PDF → Topic Outline (llm_topic_detect.py)
+    Stage 1: PDF → Topic Outline with extracted text (pdf_topic_detection.py)
     Stage 2: Topic Outline → Q&A Pairs (this script)
     Stage 3: Q&A Pairs → Vector Embeddings (init_collections.py)
 
@@ -15,22 +15,27 @@ Key Features:
 - Multi-provider support with configurable backends
 - Evidence-based Q&A with page number citations
 - Adaptive Q&A quantity based on topic length
+- Uses pre-extracted text from outline JSON (no PDF loading needed)
 - Robust error handling and retry mechanisms
 - Structured output using Pydantic models
 - Progress logging to file and console
 
+Important: This script expects outline JSON files with the new format that includes
+          a 'text' field in each topic containing the extracted text content.
+          Generate outlines using pdf_topic_detection.py to get this format.
+
 Usage:
     # Using default provider (deepseek)
-    python llm_qa_generate.py --outline outlines/book.pdf.outline.json
+    python qa_generation.py --outline pdf_outlines/deepseek-chat/01.01.pdf.outline.json
 
     # Using specific provider
-    python llm_qa_generate.py --outline "outlines/*.json" --provider gemini
+    python qa_generation.py --outline "pdf_outlines/deepseek-chat/*.json" --provider gemini
 
     # With custom output directory
-    python llm_qa_generate.py --outline outlines/book.pdf.outline.json --out_dir qas
+    python qa_generation.py --outline pdf_outlines/deepseek-chat/01.01.pdf.outline.json --out_dir qas
 
 Author: DDM RAG Team
-Last Updated: 2025-11-08
+Last Updated: 2025-11-15 (Updated to use new outline format with pre-extracted text)
 """
 import os
 import logging
@@ -159,109 +164,14 @@ class DocumentTopic(BaseModel):
     topic_keywords: List[str]
     starting_page_number: int
     ending_page_number: int
+    text: str = Field(default="", description="主題對應的文本內容（從起訖頁碼提取）")
 
 class DocumentOutline(BaseModel):
     """Document outline from Stage 1 (llm_topic_detect.py output)."""
     filename: str
     document_title: str
+    full_text: str = Field(default="", description="完整 PDF 文本內容（所有頁面）")
     main_topics: List[DocumentTopic]
-
-# ================================
-# PDF Text Extraction
-# ================================
-def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
-    """
-    Load PDF and retain page number and character position mapping.
-
-    All text is automatically converted to Traditional Chinese to ensure consistency.
-
-    This function extracts text from each page and builds a mapping between
-    character positions in the full text and their corresponding page numbers.
-    This mapping is essential for extracting specific page ranges while preserving
-    accurate page numbers.
-
-    Args:
-        fname: Path to PDF file
-
-    Returns:
-        Dict with keys:
-            - 'full_text': Complete document text in Traditional Chinese (pages joined with \n\n)
-            - 'pages': List of page info dicts with keys:
-                - 'text': Page text content in Traditional Chinese
-                - 'page_num': 1-based page number
-                - 'start_char': Character position where page starts in full_text
-                - 'end_char': Character position where page ends in full_text
-            - 'total_pages': Total number of pages
-
-    Raises:
-        Exception: If PDF cannot be loaded or read
-
-    Example:
-        >>> pdf_info = load_pdf_with_page_info("book.pdf")
-        >>> print(f"{pdf_info['total_pages']} pages, {len(pdf_info['full_text'])} chars")
-    """
-    try:
-        with pymupdf.open(fname) as doc:
-            pages_info = []
-            current_char_pos = 0
-
-            for page_num, page in enumerate(doc, start=1):
-                # Extract text and convert to Traditional Chinese
-                text = page.get_text()
-                text = cc.convert(text)  # Simplified -> Traditional Chinese
-
-                start_char = current_char_pos
-                end_char = current_char_pos + len(text)
-
-                pages_info.append({
-                    'text': text,
-                    'page_num': page_num,
-                    'start_char': start_char,
-                    'end_char': end_char
-                })
-
-                current_char_pos = end_char + 2  # Add separator length (\n\n)
-
-            full_text = '\n\n'.join([p['text'] for p in pages_info])
-
-            return {
-                'full_text': full_text,
-                'pages': pages_info,
-                'total_pages': len(pages_info)
-            }
-    except Exception as e:
-        logger.error(f"載入 PDF 失敗 {fname}: {e}")
-        raise
-
-def extract_text_for_page_range(pdf_info: Dict[str, Any], start_page: int, end_page: int) -> str:
-    """
-    Extract text from PDF for a specific page range using pre-loaded PDF info.
-
-    Args:
-        pdf_info: PDF data dict from load_pdf_with_page_info()
-        start_page: Starting page number (1-indexed)
-        end_page: Ending page number (1-indexed, inclusive)
-
-    Returns:
-        Extracted text for the page range
-
-    Example:
-        >>> pdf_info = load_pdf_with_page_info("book.pdf")
-        >>> text = extract_text_for_page_range(pdf_info, 10, 25)
-    """
-    pages_info = pdf_info['pages']
-
-    # Filter pages within range
-    selected_pages = [
-        p for p in pages_info
-        if start_page <= p['page_num'] <= end_page
-    ]
-
-    if not selected_pages:
-        return ""
-
-    # Join selected pages with \n\n separator
-    return '\n\n'.join([p['text'] for p in selected_pages])
 
 def clamp_text(text: str, limit: int) -> str:
     """
@@ -539,8 +449,7 @@ def process_outline_file(
     temperature: float,
     max_tokens: int,
     max_context_chars: int,
-    output_dir: str,
-    pdf_dir: str
+    output_dir: str
 ) -> bool:
     """
     Process a single outline JSON file to generate Q&A pairs.
@@ -572,37 +481,23 @@ def process_outline_file(
         output_filename = os.path.basename(outline_path).replace('.outline.json', '.qa.json')
         output_path = os.path.join(output_dir, output_filename)
 
-        # Load PDF once for all topics
-        pdf_path = os.path.join(pdf_dir, outline.filename)
-        logger.info(f"   載入 PDF：{pdf_path}")
-        try:
-            pdf_info = load_pdf_with_page_info(pdf_path)
-            logger.info(f"   PDF 載入完成：{pdf_info['total_pages']} 頁")
-        except Exception as e:
-            logger.error(f"   ❌ PDF 載入失敗: {e}")
-            return False
+        # No need to load PDF - text is now in the outline JSON
+        logger.info(f"   使用大綱 JSON 中的預提取文本（無需載入 PDF）")
 
         # Process each topic
         all_topic_qas = []
         for i, topic in enumerate(outline.main_topics, 1):
-            
+
             logger.info(f"   處理主題 {i}/{len(outline.main_topics)}: {topic.topic_title}")
 
-            # Extract PDF text for this topic's page range
-            try:
-                topic_text = extract_text_for_page_range(
-                    pdf_info=pdf_info,
-                    start_page=topic.starting_page_number,
-                    end_page=topic.ending_page_number
-                )
-                logger.info(f"      提取頁碼 {topic.starting_page_number}-{topic.ending_page_number} ({len(topic_text)} 字符)")
-            except Exception as e:
-                logger.error(f"      ❌ PDF 文本提取失敗: {e}")
-                continue
+            # Use text directly from outline JSON
+            topic_text = topic.text
 
-            if not topic_text.strip():
+            if not topic_text or not topic_text.strip():
                 logger.warning(f"      ⚠️  文本為空，跳過此主題")
                 continue
+
+            logger.info(f"      頁碼範圍 {topic.starting_page_number}-{topic.ending_page_number} ({len(topic_text)} 字符)")
 
             # Generate Q&As (LLM determines appropriate quantity)
             qa_collection = generate_qas_for_topic(
@@ -634,7 +529,7 @@ def process_outline_file(
             "document_title": outline.document_title,
             "topics": all_topic_qas
         }
-        
+
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
@@ -654,11 +549,9 @@ def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Q&A 生成工具（從主題大綱生成問答對）")
     parser.add_argument("--outline", type=str, required=True,
-                       help="大綱 JSON 檔案路徑或通配符模式（例如 outlines/*.json）")
-    parser.add_argument("--out_dir", type=str, default="qas",
-                       help="輸出目錄 (預設：qas)")
-    parser.add_argument("--pdf_dir", type=str, default=None,
-                       help="PDF 檔案目錄（如果大綱中未包含完整路徑）")
+                       help="大綱 JSON 檔案路徑或通配符模式（例如 pdf_outlines/deepseek-chat/*.json）")
+    parser.add_argument("--out_dir", type=str, default="qa_pairs",
+                       help="輸出目錄 (預設：qa_pairs)")
     parser.add_argument("--log_level", type=str, default="INFO",
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                        help="日誌級別")
@@ -693,9 +586,6 @@ def main():
         base_url=provider_config.base_url
     )
 
-    # Ensure output directory exists
-    os.makedirs(args.out_dir, exist_ok=True)
-
     # Find all matching outline files
     outline_files = glob.glob(args.outline)
     if not outline_files:
@@ -704,13 +594,20 @@ def main():
 
     logger.info(f"找到 {len(outline_files)} 個大綱文件待處理")
 
+    # Create output directory with model name subdirectory
+    # Format: {out_dir}/{model_name}/
+    # Sanitize model name for use in path (replace slashes with underscores)
+    safe_model_name = provider_config.model_name.replace('/', '_').replace('\\', '_')
+    model_output_dir = os.path.join(args.out_dir, safe_model_name)
+    os.makedirs(model_output_dir, exist_ok=True)
+
+    logger.info(f"輸出目錄: {model_output_dir}")
+
     # Process each outline file
     successful_count = 0
     for outline_file in outline_files:
-        output_file = os.path.join(
-            args.out_dir,
-            os.path.basename(outline_file).replace('.outline.json', '.qa.json')
-        )
+        output_filename = os.path.basename(outline_file).replace('.outline.json', '.qa.json')
+        output_file = os.path.join(model_output_dir, output_filename)
 
         if os.path.exists(output_file) and not args.overwrite:
             logger.info(f"跳過已存在的文件: {output_file}")
@@ -724,14 +621,14 @@ def main():
             temperature=provider_config.temperature,
             max_tokens=provider_config.max_tokens,
             max_context_chars=provider_config.max_context_chars,
-            output_dir=args.out_dir,
-            pdf_dir=args.pdf_dir 
+            output_dir=model_output_dir
         )
 
         if success:
             successful_count += 1
 
-    logger.info(f"處理完成！成功: {successful_count}/{len(outline_files)} 個文件")
+    logger.info(f"\n✅ 處理完成！成功: {successful_count}/{len(outline_files)} 個文件")
+    logger.info(f"輸出目錄: {model_output_dir}")
 
 if __name__ == "__main__":
     main()

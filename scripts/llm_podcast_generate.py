@@ -365,7 +365,7 @@ def generate_podcast_script(
         "     * 例：「這個修行方法具體要怎麼做呢？」\n"
         "     * 例：「這對我們日常生活有什麼啟發呢？」\n"
         "   - 來賓回應追問，進一步闡述\n"
-        "   - 每段 6-10 輪對話（深度討論，來回互動）\n\n"
+        "   - 每段 3-5 輪對話（深度討論，來回互動）\n\n"
 
         "3. closing（結尾）：\n"
         "   - 主持人總結本集重點佛法概念\n"
@@ -423,11 +423,11 @@ def generate_podcast_script(
         '        {"speaker": "anchor", "speaker_name": "小雯", "content": "...（追問細節）"},\n'
         '        {"speaker": "guest", "speaker_name": "慧心居士", "content": "...（進一步闡述）"}\n'
         '      ],\n'
-        '      "duration_estimate": "4-6分鐘"\n'
+        '      "duration_estimate": "2-3分鐘"\n'
         '    }\n'
         '  ],\n'
         '  "closing": [...],\n'
-        '  "total_duration_estimate": "20-30分鐘"\n'
+        '  "total_duration_estimate": "10-15分鐘"\n'
         '}\n'
     )
 

@@ -1,44 +1,30 @@
-# extract pdf content via mineru API
-from dotenv import load_dotenv
-import os
-import requests
+# utilities from scripts
+import logging
+import json
+from pathlib import Path
+from typing import List, Dict 
+# ================================
+# Helper Functions
+# ================================
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
+def load_deduplicated_videos(input_path: Path) -> List[Dict]:
+    """
+    Load video metadata and filter out duplicates.
 
-token = os.getenv("MINERU_API_KEY")
-url = "https://mineru.net/api/v4/file-urls/batch"
-header = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {token}"
-}
-data = {
-    "files": [
-        {"name":"data/01.01.pdf", "data_id": "0101"}
-    ],
-    "model_version": "vlm"
-}
-file_path = ["demo.pdf"]
+    Returns only videos without 'duplication' field (non-duplicates).
+    """
+    logger.info(f"Loading video metadata from {input_path}")
+    with open(input_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-try:
-    response = requests.post(url,headers=header,json=data)
-    if response.status_code == 200:
-        result = response.json()
-        print('response success. result:{}'.format(result))
-        if result["code"] == 0:
-            batch_id = result["data"]["batch_id"]
-            urls = result["data"]["file_urls"]
-            print('batch_id:{},urls:{}'.format(batch_id, urls))
-            for i in range(0, len(urls)):
-                with open(file_path[i], 'rb') as f:
-                    res_upload = requests.put(urls[i], data=f)
-                    if res_upload.status_code == 200:
-                        print(f"{urls[i]} upload success")
-                    else:
-                        print(f"{urls[i]} upload failed")
-        else:
-            print('apply upload url failed,reason:{}'.format(result.msg))
-    else:
-        print('response not success. status:{} ,result:{}'.format(response.status_code, response))
-except Exception as err:
-    print(err)
+    all_videos = data.get('videos', [])
+    non_duplicate_videos = [v for v in all_videos if 'duplication' not in v]
+
+    logger.info(f"Total videos: {len(all_videos)}")
+    logger.info(f"Non-duplicate videos: {len(non_duplicate_videos)}")
+    logger.info(f"Duplicate videos (skipped): {len(all_videos) - len(non_duplicate_videos)}")
+
+    return non_duplicate_videos
+

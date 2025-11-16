@@ -65,24 +65,58 @@ cc = OpenCC('s2t')  # s2t = Simplified to Traditional
 # ================================
 # Pydantic 資料模型
 # ================================
-class DocumentTopic(BaseModel):
-    """一個主題的標題、摘要與其在原始 PDF 的起訖頁碼。"""
+class DocumentTopicBase(BaseModel):
+    """LLM 生成的主題基礎模型（不包含 text）"""
     topic_title: str = Field(description="主題正式標題或主要段落標題。")
     topic_summary: str = Field(description="以繁體中文撰寫，一段簡短扼要的繁體中文摘要。")
     topic_keywords: List[str] = Field(description="主題相關的關鍵詞列表。")
-    starting_page_number: int = Field(description="主題在原始 PDF 中的起始頁碼。")
-    ending_page_number: int = Field(description="主題在原始 PDF 中的結束頁碼。")
+    starting_page_number: int = Field(description="主題在原始 PDF 檔案中的起始頁碼（使用 PDF 檔案頁碼，非書籍內頁印刷頁碼）。")
+    ending_page_number: int = Field(description="主題在原始 PDF 檔案中的結束頁碼（使用 PDF 檔案頁碼，非書籍內頁印刷頁碼）。")
 
-class DocumentOutline(BaseModel):
+class DocumentTopic(DocumentTopicBase):
+    """完整主題模型（包含後處理的 text 字段）"""
+    text: str = Field(default="", description="主題對應的文本內容（從起訖頁碼提取）。")
+
+class DocumentChunkOutline(BaseModel):
+    """LLM 用於單個文本塊的輸出格式（不包含 full_text 和 text）"""
     filename: str = Field(description="PDF 文件的檔名。")
     document_title: str = Field(description="PDF 文件的正式標題。")
+    main_topics: List[DocumentTopicBase] = Field(description="依出現順序列出所有主要主題（數量不限，盡可能完整）。")
+
+class DocumentOutline(BaseModel):
+    """最終輸出格式（包含 full_text）"""
+    filename: str = Field(description="PDF 文件的檔名。")
+    document_title: str = Field(description="PDF 文件的正式標題。")
+    full_text: str = Field(description="完整 PDF 文本內容（所有頁面）。")
     main_topics: List[DocumentTopic] = Field(description="依出現順序列出所有主要主題（數量不限，盡可能完整）。")
 
 
 # ================================
+# Topic Conversion Helper
+# ================================
+def convert_to_document_topic(base_topic: DocumentTopicBase) -> DocumentTopic:
+    """
+    Convert DocumentTopicBase to DocumentTopic with empty text field.
+
+    Args:
+        base_topic: DocumentTopicBase object from LLM
+
+    Returns:
+        DocumentTopic: Extended topic with text field (initially empty)
+    """
+    return DocumentTopic(
+        topic_title=base_topic.topic_title,
+        topic_summary=base_topic.topic_summary,
+        topic_keywords=base_topic.topic_keywords,
+        starting_page_number=base_topic.starting_page_number,
+        ending_page_number=base_topic.ending_page_number,
+        text=""  # Will be filled in post-processing
+    )
+
+# ================================
 # Topic Similarity and Merging Functions
 # ================================
-def topics_similar(t1: DocumentTopic, t2: DocumentTopic, threshold: float = 0.7) -> bool:
+def topics_similar(t1: DocumentTopicBase, t2: DocumentTopicBase, threshold: float = 0.7) -> bool:
     """
     Determine if two topics are similar based on multiple criteria.
 
@@ -127,7 +161,7 @@ def topics_similar(t1: DocumentTopic, t2: DocumentTopic, threshold: float = 0.7)
             (page_overlap >= 2 and keyword_similarity >= 0.3) or
             (page_overlap >= 3 and title_similarity >= 0.5))
 
-def merge_topic_group(topics: List[DocumentTopic]) -> DocumentTopic:
+def merge_topic_group(topics: List[DocumentTopicBase]) -> DocumentTopicBase:
     """
     Merge a group of similar topics into a single consolidated topic.
 
@@ -138,10 +172,10 @@ def merge_topic_group(topics: List[DocumentTopic]) -> DocumentTopic:
     - Summary: Longest summary (most comprehensive)
 
     Args:
-        topics: List of DocumentTopic objects to merge (must not be empty)
+        topics: List of DocumentTopicBase objects to merge (must not be empty)
 
     Returns:
-        DocumentTopic: Single merged topic
+        DocumentTopicBase: Single merged topic
 
     Raises:
         ValueError: If topics list is empty
@@ -174,7 +208,7 @@ def merge_topic_group(topics: List[DocumentTopic]) -> DocumentTopic:
     # Choose longest summary (assumed to be most comprehensive)
     chosen_summary = max(topics, key=lambda t: len(t.topic_summary)).topic_summary
 
-    return DocumentTopic(
+    return DocumentTopicBase(
         topic_title=chosen_title,
         topic_summary=chosen_summary,
         topic_keywords=all_keywords[:15],  # Limit to top 15 keywords
@@ -182,7 +216,7 @@ def merge_topic_group(topics: List[DocumentTopic]) -> DocumentTopic:
         ending_page_number=end_page
     )
 
-def merge_similar_topics(topics: List[DocumentTopic]) -> List[DocumentTopic]:
+def merge_similar_topics(topics: List[DocumentTopicBase]) -> List[DocumentTopicBase]:
     """
     Merge all similar topics in a list using greedy clustering algorithm.
 
@@ -197,10 +231,10 @@ def merge_similar_topics(topics: List[DocumentTopic]) -> List[DocumentTopic]:
     Space Complexity: O(n)
 
     Args:
-        topics: List of DocumentTopic objects (may contain duplicates/similar topics)
+        topics: List of DocumentTopicBase objects (may contain duplicates/similar topics)
 
     Returns:
-        List[DocumentTopic]: Deduplicated and merged topics, sorted by page number
+        List[DocumentTopicBase]: Deduplicated and merged topics, sorted by page number
 
     Example:
         >>> topics = [topic1, topic2, topic3, topic4]  # topic2 and topic3 are similar
@@ -268,19 +302,19 @@ def find_chunk_overlap_regions(text_chunks: List[Dict]) -> List[Tuple[int, int, 
 
     return overlap_regions
 
-def extract_topics_from_overlap_region(chunk_outlines: List[DocumentOutline],
-                                     overlap_region: Tuple[int, int, int, int]) -> List[DocumentTopic]:
+def extract_topics_from_overlap_region(chunk_outlines: List[DocumentChunkOutline],
+                                     overlap_region: Tuple[int, int, int, int]) -> List[DocumentTopicBase]:
     """
     Extract and merge topics from an overlapping region between two chunks.
 
     This helps deduplicate topics that were split across chunk boundaries.
 
     Args:
-        chunk_outlines: List of DocumentOutline objects from each chunk
+        chunk_outlines: List of DocumentChunkOutline objects from each chunk
         overlap_region: Tuple of (start_page, end_page, chunk1_idx, chunk2_idx)
 
     Returns:
-        List[DocumentTopic]: Merged topics from the overlap region
+        List[DocumentTopicBase]: Merged topics from the overlap region
     """
     overlap_start, overlap_end, chunk1_idx, chunk2_idx = overlap_region
 
@@ -296,8 +330,8 @@ def extract_topics_from_overlap_region(chunk_outlines: List[DocumentOutline],
     overlap_topics = topics1 + topics2
     return merge_similar_topics(overlap_topics)
 
-def merge_chunk_outlines(all_chunk_outlines: List[DocumentOutline],
-                        text_chunks: List[Dict]) -> DocumentOutline:
+def merge_chunk_outlines(all_chunk_outlines: List[DocumentChunkOutline],
+                        text_chunks: List[Dict], full_text: str) -> DocumentOutline:
     """
     Merge multiple chunk outlines into a single consolidated document outline.
 
@@ -306,11 +340,12 @@ def merge_chunk_outlines(all_chunk_outlines: List[DocumentOutline],
     2. Phase 2: Global deduplication of all topics
 
     Args:
-        all_chunk_outlines: List of DocumentOutline objects, one per chunk
+        all_chunk_outlines: List of DocumentChunkOutline objects, one per chunk
         text_chunks: List of chunk metadata dicts (for finding overlaps)
+        full_text: Complete PDF text content
 
     Returns:
-        DocumentOutline: Single merged outline with deduplicated topics
+        DocumentOutline: Single merged outline with deduplicated topics and full_text
 
     Raises:
         ValueError: If all_chunk_outlines is empty
@@ -326,7 +361,15 @@ def merge_chunk_outlines(all_chunk_outlines: List[DocumentOutline],
         raise ValueError("沒有可合併的大綱")
 
     if len(all_chunk_outlines) == 1:
-        return all_chunk_outlines[0]
+        # Create final outline with full_text for single chunk case
+        # Convert DocumentTopicBase to DocumentTopic
+        converted_topics = [convert_to_document_topic(t) for t in all_chunk_outlines[0].main_topics]
+        return DocumentOutline(
+            filename=all_chunk_outlines[0].filename,
+            document_title=all_chunk_outlines[0].document_title,
+            full_text=full_text,
+            main_topics=converted_topics
+        )
 
     logger.info(f"開始合併 {len(all_chunk_outlines)} 個分塊的大綱...")
 
@@ -371,17 +414,44 @@ def merge_chunk_outlines(all_chunk_outlines: List[DocumentOutline],
 
     logger.info(f"合併完成: {len(all_topics)} 個原始主題 -> {len(unique_topics)} 個最終主題")
 
-    # Create final outline using first chunk's metadata
+    # Convert DocumentTopicBase to DocumentTopic before creating final outline
+    converted_topics = [convert_to_document_topic(t) for t in unique_topics]
+
+    # Create final outline using first chunk's metadata and including full_text
     return DocumentOutline(
         filename=all_chunk_outlines[0].filename,
         document_title=all_chunk_outlines[0].document_title,
-        main_topics=unique_topics
+        full_text=full_text,
+        main_topics=converted_topics
     )
+
+# ================================
+# Text Extraction Helper
+# ================================
+def extract_text_by_page_range(start_page: int, end_page: int, pages_info: List[Dict]) -> str:
+    """
+    Extract text content from a page range.
+
+    Args:
+        start_page: Starting page number (1-based, inclusive)
+        end_page: Ending page number (1-based, inclusive)
+        pages_info: List of page info dicts from load_pdf_with_page_info()
+
+    Returns:
+        str: Concatenated text from all pages in the range
+    """
+    text_parts = []
+    for page in pages_info:
+        if start_page <= page['page_num'] <= end_page:
+            text_parts.append(page['text'])
+
+    return '\n\n'.join(text_parts)
+
 
 # ================================
 # PDF Processing Functions
 # ================================
-def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
+def load_pdf_with_page_info(fname: str, remove_headers: bool = True) -> Dict[str, Any]:
     """
     Load PDF and retain page number and character position mapping.
 
@@ -393,12 +463,14 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
 
     Args:
         fname: Path to PDF file
+        remove_headers: If True, attempt to remove common header/footer patterns (default: True)
 
     Returns:
         Dict with keys:
-            - 'full_text': Complete document text in Traditional Chinese (pages joined with \n\n)
+            - 'full_text': Complete document text with page markers (e.g., [PDF_PAGE_1], [PDF_PAGE_2])
+                          This is what the LLM sees to determine page numbers
             - 'pages': List of page info dicts with keys:
-                - 'text': Page text content in Traditional Chinese
+                - 'text': Page text content in Traditional Chinese (without markers)
                 - 'page_num': 1-based page number
                 - 'start_char': Character position where page starts in full_text
                 - 'end_char': Character position where page ends in full_text
@@ -412,6 +484,17 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
         >>> print(f"{pdf_info['total_pages']} pages, {len(pdf_info['full_text'])} chars")
     """
     try:
+        import re
+
+        # Common header/footer patterns to remove
+        # These patterns match book title + page number (e.g., "學佛羣疑 18", "正信的佛教 42")
+        header_patterns = [
+            r'^[\u4e00-\u9fff]{2,10}\s+\d+\s*\n',  # Chinese title + number at start of page
+            r'\n[\u4e00-\u9fff]{2,10}\s+\d+\s*$',  # Chinese title + number at end of page
+            r'^\d+\s+[\u4e00-\u9fff]{2,10}\s*\n',  # Number + Chinese title at start
+            r'\n\d+\s+[\u4e00-\u9fff]{2,10}\s*$',  # Number + Chinese title at end
+        ]
+
         with pymupdf.open(fname) as doc:
             pages_info = []
             current_char_pos = 0
@@ -420,6 +503,17 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
                 # Extract text and convert to Traditional Chinese
                 text = page.get_text()
                 text = cc.convert(text)  # Simplified -> Traditional Chinese
+
+                # Remove common headers/footers if requested
+                if remove_headers:
+                    original_length = len(text)
+                    for pattern in header_patterns:
+                        text = re.sub(pattern, '', text, flags=re.MULTILINE)
+
+                    # Log if significant text was removed (might indicate over-aggressive removal)
+                    removed_chars = original_length - len(text)
+                    if removed_chars > 50:  # More than 50 chars removed
+                        logger.debug(f"Page {page_num}: Removed {removed_chars} chars (possible headers/footers)")
 
                 start_char = current_char_pos
                 end_char = current_char_pos + len(text)
@@ -433,10 +527,17 @@ def load_pdf_with_page_info(fname: str) -> Dict[str, Any]:
 
                 current_char_pos = end_char + 2  # Add separator length (\n\n)
 
-            full_text = '\n\n'.join([p['text'] for p in pages_info])
+            # Create full_text WITH page markers for LLM processing and debugging
+            # Format: [PDF_PAGE_1]\n<text>\n\n[PDF_PAGE_2]\n<text>...
+            text_parts_with_markers = []
+            for page in pages_info:
+                marker = f"[PDF_PAGE_{page['page_num']}]"
+                text_parts_with_markers.append(f"{marker}\n{page['text']}")
+
+            full_text_with_markers = '\n\n'.join(text_parts_with_markers)
 
             return {
-                'full_text': full_text,
+                'full_text': full_text_with_markers,  # With page markers for LLM
                 'pages': pages_info,
                 'total_pages': len(pages_info)
             }
@@ -640,31 +741,37 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
             
             # 構造更嚴格的提示詞
             prompt = (
-                f"請分析以下 PDF 文件 filename:{os.path.basename(pdf_file)} 內容（共 {total_chunks} 部分，這是第 {chunk_num} 部分，對應原始 PDF 頁碼約 {chunk['start_page']}-{chunk['end_page']} 頁），"
-                f"並以繁體中文輸出所有主要主題（數量不限），含摘要與起訖頁碼。\n\n"
-                f"重要：請確保輸出完整的、有效的 JSON 格式，所有字符串都正確終止。\n\n"
+                f"請分析以下 PDF 文件 filename:{os.path.basename(pdf_file)} 內容（共 {total_chunks} 部分，這是第 {chunk_num} 部分，對應原始 PDF 檔案頁碼約 {chunk['start_page']}-{chunk['end_page']} 頁），"
+                f"並以繁體中文輸出主要主題，含摘要與起訖頁碼。\n\n"
+                f"重要限制：\n"
+                f"1. 請提取重要的主題\n"
+                f"2. 每個主題摘要限制在 100 字以內\n"
+                f"3. 關鍵詞限制在 5 個以內\n"
+                f"4. 請確保輸出完整的、有效的 JSON 格式，所有字符串都正確終止\n"
+                f"5. **頁碼識別**：文件內容中包含 [PDF_PAGE_N] 標記（例如 [PDF_PAGE_4]），請根據這些標記來確定主題的起始和結束頁碼\n\n"
                 f"【文件內容】\n{chunk_text}\n\n"
                 f"請直接輸出 JSON 格式，不要包含任何其他文字。確保 JSON 完整且語法正確。"
             )
             
             try:
-                
+
                 # OpenAI standard structure output parsing
                 if model_name.startswith("gpt-"):
-                    # using the new response API
+                    # using the new response API with DocumentChunkOutline (no full_text)
+                    # noted, it won't take all these token, temperature etc.,
                     response = client.responses.parse(
                         model=model_name,
                         input=[
                             {"role": "system", "content": system_instruction},
                             {"role": "user", "content": prompt}
                         ],
-                        text_format=DocumentOutline
+                        text_format=DocumentChunkOutline
                     )
                     # no parsing needed, directly get the parsed output
                     outline = response.output_parsed
-                    
-                # deepseek structure output
-                elif model_name.startswith("deepseek-") or model_name.startswith("qwen3-"):   
+
+                # deepseek structure output, specify json_object for structure output
+                elif model_name.startswith("deepseek-") or model_name.startswith("qwen3-"):
                     # deepseek structure output
                     response = client.chat.completions.create(
                         model=model_name,
@@ -678,17 +785,17 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
                         timeout=timeout_secs,
                         response_format={"type": "json_object"}
                     )
+                    # we do get something back from LLM
                     # 解析 JSON
                     json_data = json.loads(response.choices[0].message.content)
-                
                     try:
-                        outline = DocumentOutline(**json_data)
+                        outline = DocumentChunkOutline(**json_data)
                     except Exception as e:
                         raise ValueError(f"資料驗證失敗: {e}")
-                
-                # vllm local model structure output
-                elif model_name.startswith("cpatonn/Qwen3-"):   
-                    # vllm structure output
+
+                # vllm local model structure output, or gemini use the parse function
+                elif model_name.startswith("cpatonn/Qwen3-") or model_name.startswith("gemini-"):
+                    # vllm structure output with DocumentChunkOutline (no full_text)
                     response = client.beta.chat.completions.parse(
                         model=model_name,
                         messages=[
@@ -697,24 +804,10 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
                         ],
                         max_tokens=max_tokens,
                         temperature=temperature,
-                        response_format=DocumentOutline
+                        response_format=DocumentChunkOutline
                     )
                     outline = response.choices[0].message.parsed
-                # gemini open compatible mode
-                elif model_name.startswith("gemini-"):
-                    # using the new response API
-                    response = client.beta.chat.completions.parse(
-                        model=model_name,
-                        messages=[
-                            {"role": "system", "content": system_instruction},
-                            {"role": "user", "content": prompt}
-                        ],
-                        max_tokens=max_tokens,
-                        temperature=temperature,
-                        response_format=DocumentOutline
-                    )
-                    # no parsing needed, directly get the parsed output
-                    outline = response.choices[0].message.parsed
+                # if should not end up here
                 else:
                     raise ValueError(f"未知的模型名稱格式: {model_name}")
 
@@ -729,10 +822,10 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
         if not all_chunk_outlines:
             logger.error(f"無法從任何文本塊中提取主題: {pdf_file}")
             return None
-        
+
         # 使用改進的合併策略
         try:
-            final_outline = merge_chunk_outlines(all_chunk_outlines, text_chunks)
+            final_outline = merge_chunk_outlines(all_chunk_outlines, text_chunks, pdf_info['full_text'])
             logger.info(f"合併完成: {len(all_chunk_outlines)} 個分塊 -> {len(final_outline.main_topics)} 個主題")
         except Exception as e:
             logger.error(f"合併失敗，使用簡單合併: {e}")
@@ -740,12 +833,24 @@ def process_pdf_file(pdf_file: str, client: OpenAI, system_instruction: str,
             all_topics = []
             for outline in all_chunk_outlines:
                 all_topics.extend(outline.main_topics)
+            # Convert DocumentTopicBase to DocumentTopic
+            converted_topics = [convert_to_document_topic(t) for t in all_topics[:20]]  # 限制主題數量
             final_outline = DocumentOutline(
                 filename=os.path.basename(pdf_file),
                 document_title=document_title or os.path.basename(pdf_file),
-                main_topics=all_topics[:20]  # 限制主題數量
+                full_text=pdf_info['full_text'],
+                main_topics=converted_topics
             )
-        
+
+        # 5) 提取每個主題對應的文本內容
+        logger.info(f"提取主題對應的文本內容...")
+        for topic in final_outline.main_topics:
+            topic.text = extract_text_by_page_range(
+                topic.starting_page_number,
+                topic.ending_page_number,
+                pdf_info['pages']
+            )
+
         logger.info(f"✅ 處理完成: {pdf_file} -> 提取 {len(final_outline.main_topics)} 個主題")
         return final_outline
         
@@ -758,6 +863,7 @@ from llm_config import config_manager
 def main():
     """主函數"""
     parser = argparse.ArgumentParser(description="PDF 主題提取工具（修復 JSON 錯誤和主題合併問題）")
+    
     parser.add_argument("--pdf", type=str, required=True,
                        help="PDF 檔案路徑或通配符模式（例如 data/*.pdf）")
     parser.add_argument("--out_dir", type=str, default="outlines",
@@ -783,24 +889,43 @@ def main():
     system_instruction = (
         "你是一位專業的文件分析與索引專家。請仔細閱讀提供的文件內容，"
         "以繁體中文輸出清晰的結構化大綱。\n\n"
-        
+
         "重要規則：\n"
         "1. 輸出必須是完整且有效的 JSON 格式\n"
         "2. 所有字符串必須用雙引號包圍\n"
         "3. 確保所有括號正確閉合\n"
         "4. 沒有未終止的字符串\n"
-        "5, 所有輸出必須使用繁體中文\n"
+        "5. 所有輸出必須使用繁體中文\n"
         "6. 不要包含 JSON 之外的任何文字\n\n"
-        
+
+        "**頁碼識別方法**：\n"
+        "文件內容中包含頁碼標記，格式為 [PDF_PAGE_N]（例如 [PDF_PAGE_4]、[PDF_PAGE_5]）。\n"
+        "請根據這些標記來確定每個主題的起始和結束頁碼。\n"
+        "例如：如果某主題從 [PDF_PAGE_4] 開始到 [PDF_PAGE_6] 結束，則 starting_page_number=4, ending_page_number=6。\n\n"
+
         "對於每個主題，請提供：\n"
         "- topic_title: 主題正式標題\n"
         "- topic_summary: 繁體中文摘要（簡短扼要）\n"
         "- topic_keywords: 關鍵詞列表（陣列格式）\n"
-        "- starting_page_number: 起始頁碼\n"
-        "- ending_page_number: 結束頁碼\n\n"
-        
-        "請忽略前言、序言、自序、致謝、出版資訊或目錄等導言部分。\n\n"
-        
+        "- starting_page_number: 起始頁碼（根據 [PDF_PAGE_N] 標記）\n"
+        "- ending_page_number: 結束頁碼（根據 [PDF_PAGE_N] 標記）\n\n"
+
+        "**重要：請忽略以下類型的內容，不要將它們當作主題提取：**\n"
+        "- 前言、序言、自序、編者的話等導言性文字\n"
+        "- 目錄、索引、參考書目\n"
+        "- 致謝、版權聲明、出版資訊\n"
+        "- 空白頁、封面頁\n\n"
+
+        "**僅提取正文中的實質性主題**，即實際討論具體內容、理論、方法等的章節。\n\n"
+
+        "❌ 錯誤範例（不要提取）：\n"
+        "「自序：從體裁、目的與對象而言，這本書是我在一九六三年所寫...本書的內容，既是知識學問的，更是生活和實用的...」\n"
+        "→ 這是作者介紹本書寫作緣起和結構，屬於序言，不是主題。\n\n"
+
+        "✅ 正確範例（應該提取）：\n"
+        "「信仰佛教一定要皈依三寶嗎？是的，信仰佛教和鬼神崇拜的民間信仰很不相同，信仰佛教必須三寶具足...」\n"
+        "→ 這是實質性討論「皈依三寶」的佛法內容，應該提取為主題。\n\n"
+
         "輸出格式必須嚴格遵循：\n"
         '{"filename": "文件名", "document_title": "文件標題", "main_topics": [{"topic_title": "標題", "topic_summary": "摘要", "topic_keywords": ["關鍵詞1"], "starting_page_number": 1, "ending_page_number": 2}]}'
     )
@@ -825,21 +950,29 @@ def main():
         api_key=provider_config.api_key,
         base_url=provider_config.base_url
     )
-     
-    # 確保輸出目錄存在
-    os.makedirs(args.out_dir, exist_ok=True)
-    
+
     # 處理所有匹配的 PDF 文件
     pdf_files = glob.glob(args.pdf)
     if not pdf_files:
         logger.warning(f"沒有找到匹配的 PDF 文件: {args.pdf}")
         return
-    
+
     logger.info(f"找到 {len(pdf_files)} 個 PDF 文件待處理")
-    
+
+    # Create output directory with model name subdirectory
+    # Format: {out_dir}/{model_name}/
+    # Sanitize model name for use in path (replace slashes with underscores)
+    safe_model_name = provider_config.model_name.replace('/', '_').replace('\\', '_')
+    model_output_dir = os.path.join(args.out_dir, safe_model_name)
+    os.makedirs(model_output_dir, exist_ok=True)
+
+    logger.info(f"輸出目錄: {model_output_dir}")
+
     successful_count = 0
     for pdf_file in pdf_files:
-        out_file = os.path.join(args.out_dir, f"{os.path.basename(pdf_file)}.outline.json")
+        # Generate output filename: {basename}.outline.json
+        output_filename = f"{os.path.basename(pdf_file)}.outline.json"
+        out_file = os.path.join(model_output_dir, output_filename)
         if os.path.exists(out_file) and not args.overwrite:
             logger.info(f"跳過已存在的文件: {out_file}")
             successful_count += 1
@@ -859,7 +992,10 @@ def main():
             if final_outline:
                 # 保存為 JSON 格式
                 with open(out_file, "w", encoding="utf-8") as f:
-                    f.write(final_outline.model_dump_json(ensure_ascii=False, indent=2) + "\n")
+                    # Use json.dumps with model_dump() for ensure_ascii control
+                    import json as json_lib
+                    json_str = json_lib.dumps(final_outline.model_dump(), ensure_ascii=False, indent=2)
+                    f.write(json_str + "\n")
                 
                 successful_count += 1
                 logger.info(f"✅ 已保存: {out_file}")
@@ -893,7 +1029,9 @@ def main():
                         if final_outline:
                             # 保存為 JSON 格式
                             with open(out_file, "w", encoding="utf-8") as f:
-                                f.write(final_outline.model_dump_json(ensure_ascii=False, indent=2) + "\n")
+                                # Use json.dumps with model_dump() for ensure_ascii control
+                                json_str = json_lib.dumps(final_outline.model_dump(), ensure_ascii=False, indent=2)
+                                f.write(json_str + "\n")
                             
                             successful_count += 1
                             logger.info(f"✅ 已保存 (備用供應商): {out_file}")
@@ -905,8 +1043,9 @@ def main():
 
         except Exception as e:
             logger.error(f"❌ 處理文件時發生錯誤 {pdf_file}: {e}")
-    
-    logger.info(f"處理完成！成功: {successful_count}/{len(pdf_files)} 個文件")
+
+    logger.info(f"\n✅ 處理完成！成功: {successful_count}/{len(pdf_files)} 個文件")
+    logger.info(f"輸出目錄: {model_output_dir}")
 
 if __name__ == "__main__":
     main()

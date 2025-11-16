@@ -1,0 +1,550 @@
+[
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u01-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u01-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u01-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u01-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u01-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u01-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u02-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u02-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u02-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u02-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u02-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u02-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-07.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-07.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u03-08.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u03-08.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-07.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-07.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-08.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-08.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-09.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-09.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-10.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-10.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-11.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-11.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u04-12.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u04-12.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u05-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u05-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u05-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u05-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u05-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u05-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u06-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u06-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u06-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u06-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u06-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u06-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u07-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u07-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u08-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u08-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u09-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u09-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u09-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u09-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u09-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u09-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u10-07.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u10-07.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u11-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u11-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u11-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u11-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u11-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u11-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s01-u11-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s01-u11-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u01-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u01-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u01-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u01-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u01-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u01-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u01-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u01-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u02-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u02-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u02-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u02-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u02-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u02-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u02-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u02-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u03-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u03-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u03-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u03-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u03-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u03-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u03-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u03-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u04-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u04-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u04-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u04-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u04-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u04-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u04-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u04-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u05-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u05-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u05-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u05-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u06-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u06-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s02-u06-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s02-u06-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u01-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u01-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u01-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u01-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u01-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u01-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u02-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u02-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u02-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u02-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u02-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u02-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u02-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u02-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u03-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u03-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u03-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u03-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u03-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u03-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u03-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u03-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u04-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u04-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u04-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u04-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u05-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u05-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u05-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u05-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u06-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u06-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s03-u06-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s03-u06-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u01-06.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u01-06.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u02-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u02-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u02-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u02-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u03-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u03-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u03-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u03-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u03-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u03-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u04-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u04-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u04-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u04-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u04-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u04-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u05-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u05-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u05-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u05-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u06-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u06-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u07-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u07-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u08-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u08-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s04-u08-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s04-u08-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u01-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u01-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u01-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u01-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u02-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u02-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u02-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u02-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u02-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u02-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u02-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u02-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u02-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u02-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u03-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u03-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u03-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u03-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u04-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u04-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u04-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u04-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u04-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u04-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u04-04.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u04-04.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u04-05.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u04-05.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u05-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u05-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u05-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u05-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u06-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u06-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u06-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u06-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u06-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u06-03.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u07-01.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u07-01.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u07-02.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u07-02.srt"
+  },
+  {
+    "audio_src": "/home/chiweic/repository/ddm_audio/s05-u07-03.mp3",
+    "srt_tgt": "/home/chiweic/repository/ddm_audio_srt/funasr/s05-u07-03.srt"
+  }
+]

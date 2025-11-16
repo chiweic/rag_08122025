@@ -2,39 +2,50 @@
 """
 Audio Topic Extraction Tool
 
-This script extracts structured topic outlines from audio transcript JSON files using LLMs.
+This script extracts structured topic outlines from audio transcripts (SRT or JSON) using LLMs.
 It's adapted from llm_topic_detect.py but works with audio timestamps instead of PDF pages.
 
 Key Features:
 - Multi-provider support with configurable backends (DeepSeek, OpenAI, DashScope, local vLLM)
+- Supports both SRT and JSON transcript formats (auto-detected)
 - Automatic chunking for long transcripts exceeding context limits
 - Advanced topic deduplication using title similarity, timestamp overlap, and keywords
 - Robust JSON parsing with fallback mechanisms
 - Structured output using Pydantic models
 - Progress logging to file and console
 
-Input Format:
-    Audio JSON with segments structure:
-    {
-        "segments": [
-            {"start": 0.0, "end": 120.5, "text": "..."},
-            {"start": 120.5, "end": 240.2, "text": "..."},
-            ...
-        ]
-    }
+Input Formats:
+    1. SRT format (subtitle format):
+        1
+        00:00:00,000 --> 00:00:05,500
+        First subtitle text
+
+        2
+        00:00:05,500 --> 00:00:10,200
+        Second subtitle text
+
+    2. JSON format (with segments):
+        {
+            "segments": [
+                {"start": 0.0, "end": 120.5, "text": "..."},
+                {"start": 120.5, "end": 240.2, "text": "..."},
+                ...
+            ]
+        }
 
 Usage:
-    # Using default provider (deepseek)
-    python audio_topic_detection.py --audio data/audio_transcript.json
+    # Using SRT files
+    python audio_topic_detection.py --audio data/transcript.srt
 
-    # Using specific provider
+    # Using JSON files with wildcard
     python audio_topic_detection.py --audio "data/*.json" --provider openai
 
     # With custom output directory
-    python audio_topic_detection.py --audio data/transcript.json --out_dir audio_outlines
+    python audio_topic_detection.py --audio data/transcript.srt --out_dir audio_outlines
 
 Author: DDM RAG Team
 Created: 2025-11-10
+Updated: 2025-11-14 (Added SRT support)
 """
 
 import os
@@ -50,9 +61,6 @@ import argparse
 from openai import OpenAI
 import time
 from opencc import OpenCC  # Simplified to Traditional Chinese conversion
-
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from llm_config import config_manager
 
 # ================================
@@ -85,12 +93,21 @@ class AudioTopic(BaseModel):
     topic_keywords: List[str] = Field(description="主題相關的關鍵詞列表。")
     starting_timestamp: float = Field(description="主題在音頻中的起始時間（秒）。")
     ending_timestamp: float = Field(description="主題在音頻中的結束時間（秒）。")
+    text: str = Field(default="", description="主題對應的逐字稿文本（從起訖時間戳提取）。")
 
-class AudioOutline(BaseModel):
+class AudioChunkOutline(BaseModel):
+    """LLM 用於單個文本塊的輸出格式（不包含 full_text）"""
     filename: str = Field(description="音頻文件的檔名。")
     audio_title: str = Field(description="音頻的正式標題。")
     main_topics: List[AudioTopic] = Field(description="依出現順序列出所有主要主題（數量不限，盡可能完整）。")
 
+class AudioOutline(BaseModel):
+    """最終輸出格式（包含 full_text）"""
+    filename: str = Field(description="音頻文件的檔名。")
+    audio_title: str = Field(description="音頻的正式標題。")
+    full_text: str = Field(description="完整逐字稿原始文本（未修正）。")
+    correct_text: str = Field(default="", description="完整逐字稿修正文本（LLM 修正後，如啟用修正功能）。")
+    main_topics: List[AudioTopic] = Field(description="依出現順序列出所有主要主題（數量不限，盡可能完整）。")
 
 # ================================
 # Topic Similarity and Merging Functions
@@ -245,52 +262,87 @@ def deduplicate_topics(topics: List[AudioTopic], similarity_threshold: float = 0
 
 
 # ================================
-# Audio Loading and Chunking
+# SRT Parsing Functions
 # ================================
-def load_audio_with_timestamp_info(audio_json_path: str) -> Dict[str, Any]:
+def parse_srt_time(time_str: str) -> float:
     """
-    Load audio transcript JSON and retain timestamp information.
+    Parse SRT timestamp string to seconds.
 
-    All text is automatically converted to Traditional Chinese to ensure consistency.
+    Format: HH:MM:SS,mmm (e.g., "00:01:23,456")
 
     Args:
-        audio_json_path: Path to audio transcript JSON file
+        time_str: SRT timestamp string
+
+    Returns:
+        float: Time in seconds
+    """
+    # Split hours:minutes:seconds,milliseconds
+    time_part, ms_part = time_str.strip().split(',')
+    h, m, s = map(int, time_part.split(':'))
+    ms = int(ms_part)
+
+    return h * 3600 + m * 60 + s + ms / 1000.0
+
+
+def load_srt_file(srt_path: str) -> Dict[str, Any]:
+    """
+    Load SRT subtitle file and convert to segment format.
+
+    SRT format:
+        1
+        00:00:00,000 --> 00:00:05,500
+        First subtitle text
+
+        2
+        00:00:05,500 --> 00:00:10,200
+        Second subtitle text
+
+    Args:
+        srt_path: Path to SRT file
 
     Returns:
         Dict with keys:
             - 'full_text': Complete transcript text in Traditional Chinese
-            - 'segments': List of segment info dicts with keys:
-                - 'text': Segment text content in Traditional Chinese
-                - 'start': Starting timestamp (seconds)
-                - 'end': Ending timestamp (seconds)
-                - 'start_char': Character position where segment starts in full_text
-                - 'end_char': Character position where segment ends in full_text
-            - 'total_duration': Total audio duration in seconds
-
-    Raises:
-        Exception: If JSON cannot be loaded or parsed
+            - 'segments': List of segment info dicts
+            - 'total_duration': Total duration in seconds
     """
+    segments_info = []
+    current_char_pos = 0
+
     try:
-        with open(audio_json_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        with open(srt_path, 'r', encoding='utf-8') as f:
+            content = f.read()
 
-        segments = data.get('segments', [])
-        if not segments:
-            raise ValueError(f"No segments found in {audio_json_path}")
+        # Split into subtitle blocks (separated by double newlines)
+        blocks = content.strip().split('\n\n')
 
-        segments_info = []
-        current_char_pos = 0
+        for block in blocks:
+            lines = block.strip().split('\n')
 
-        for seg in segments:
-            # Extract and convert text to Traditional Chinese
-            text = seg.get('text', '').strip()
+            if len(lines) < 3:
+                continue  # Skip malformed blocks
+
+            # Line 0: Subtitle number (skip)
+            # Line 1: Timestamp range
+            # Line 2+: Subtitle text
+
+            timestamp_line = lines[1]
+            text_lines = lines[2:]
+
+            # Parse timestamps
+            if '-->' not in timestamp_line:
+                continue
+
+            start_str, end_str = timestamp_line.split('-->')
+            start_time = parse_srt_time(start_str)
+            end_time = parse_srt_time(end_str)
+
+            # Join text lines and convert to Traditional Chinese
+            text = ' '.join(text_lines).strip()
             if not text:
                 continue
 
             text = cc.convert(text)  # Simplified -> Traditional Chinese
-
-            start_time = float(seg.get('start', 0))
-            end_time = float(seg.get('end', 0))
 
             start_char = current_char_pos
             end_char = current_char_pos + len(text)
@@ -305,6 +357,9 @@ def load_audio_with_timestamp_info(audio_json_path: str) -> Dict[str, Any]:
 
             current_char_pos = end_char + 2  # Add separator length (\n\n)
 
+        if not segments_info:
+            raise ValueError(f"No valid segments found in {srt_path}")
+
         full_text = '\n\n'.join([seg['text'] for seg in segments_info])
         total_duration = segments_info[-1]['end'] if segments_info else 0
 
@@ -315,8 +370,99 @@ def load_audio_with_timestamp_info(audio_json_path: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"載入音頻 JSON 失敗 {audio_json_path}: {e}")
+        logger.error(f"載入 SRT 文件失敗 {srt_path}: {e}")
         raise
+
+
+# ================================
+# Audio Loading and Chunking
+# ================================
+def load_audio_with_timestamp_info(audio_file_path: str) -> Dict[str, Any]:
+    """
+    Load audio transcript (SRT or JSON) and retain timestamp information.
+
+    Auto-detects format based on file extension:
+    - .srt: SRT subtitle format
+    - .json: JSON format with segments array
+
+    All text is automatically converted to Traditional Chinese to ensure consistency.
+
+    Args:
+        audio_file_path: Path to audio transcript file (SRT or JSON)
+
+    Returns:
+        Dict with keys:
+            - 'full_text': Complete transcript text in Traditional Chinese
+            - 'segments': List of segment info dicts with keys:
+                - 'text': Segment text content in Traditional Chinese
+                - 'start': Starting timestamp (seconds)
+                - 'end': Ending timestamp (seconds)
+                - 'start_char': Character position where segment starts in full_text
+                - 'end_char': Character position where segment ends in full_text
+            - 'total_duration': Total audio duration in seconds
+
+    Raises:
+        Exception: If file cannot be loaded or parsed
+    """
+    file_ext = os.path.splitext(audio_file_path)[1].lower()
+
+    # Auto-detect format
+    if file_ext == '.srt':
+        logger.info(f"檢測到 SRT 格式文件")
+        return load_srt_file(audio_file_path)
+
+    elif file_ext == '.json':
+        logger.info(f"檢測到 JSON 格式文件")
+        try:
+            with open(audio_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            segments = data.get('segments', [])
+            if not segments:
+                raise ValueError(f"No segments found in {audio_file_path}")
+
+            segments_info = []
+            current_char_pos = 0
+
+            for seg in segments:
+                # Extract and convert text to Traditional Chinese
+                text = seg.get('text', '').strip()
+                if not text:
+                    continue
+
+                text = cc.convert(text)  # Simplified -> Traditional Chinese
+
+                start_time = float(seg.get('start', 0))
+                end_time = float(seg.get('end', 0))
+
+                start_char = current_char_pos
+                end_char = current_char_pos + len(text)
+
+                segments_info.append({
+                    'text': text,
+                    'start': start_time,
+                    'end': end_time,
+                    'start_char': start_char,
+                    'end_char': end_char
+                })
+
+                current_char_pos = end_char + 2  # Add separator length (\n\n)
+
+            full_text = '\n\n'.join([seg['text'] for seg in segments_info])
+            total_duration = segments_info[-1]['end'] if segments_info else 0
+
+            return {
+                'full_text': full_text,
+                'segments': segments_info,
+                'total_duration': total_duration
+            }
+
+        except Exception as e:
+            logger.error(f"載入音頻 JSON 失敗 {audio_file_path}: {e}")
+            raise
+
+    else:
+        raise ValueError(f"不支持的文件格式: {file_ext}。僅支持 .srt 和 .json 文件")
 
 
 def map_char_to_timestamp(char_position: int, segments_info: List[Dict]) -> Tuple[float, float]:
@@ -473,19 +619,85 @@ def produce_text_chunks(audio_info: Dict[str, Any], max_context_chars: int) -> L
 
 
 # ================================
+# Transcription Error Correction
+# ================================
+def correct_transcription_errors(text: str, client: OpenAI, model_name: str,
+                                temperature: float, max_tokens: int, timeout_secs: int) -> str:
+    """
+    Use LLM to correct potential transcription errors in the text.
+
+    This is particularly useful for:
+    - Buddhist terminology that STT models might mishear
+    - Homophones (同音字) in Chinese
+    - Context-dependent word choices
+    - Grammar and punctuation improvements
+
+    Args:
+        text: Original transcribed text
+        client: OpenAI-compatible client instance
+        model_name: Model identifier
+        temperature: LLM temperature (recommend 0.3 for correction task)
+        max_tokens: Maximum output tokens
+        timeout_secs: API timeout in seconds
+
+    Returns:
+        str: Corrected text
+    """
+    try:
+        correction_prompt = f"""請仔細檢查以下音頻逐字稿，修正可能的轉錄錯誤。
+
+重要規則：
+1. 保持原文的意思和語氣，只修正明顯的錯誤
+2. 特別注意佛教專有名詞（如：般若、禪定、菩薩、阿羅漢等）
+3. 修正同音字錯誤（如：在→再、做→作、的→得等）
+4. 改善標點符號，使語意更清晰
+5. 保持原文長度大致相同，不要大幅增減內容
+6. 如果不確定，保持原文不變
+7. 輸出純文本，不要添加任何說明或標記
+
+原文：
+{text}
+
+請直接輸出修正後的文本："""
+
+        # Use chat completion (no structured output needed)
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "你是一位專業的文字校對專家，特別擅長佛教文獻的校對。"},
+                {"role": "user", "content": correction_prompt}
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=timeout_secs
+        )
+
+        corrected_text = response.choices[0].message.content.strip()
+        logger.info(f"   文本修正完成：{len(text)} → {len(corrected_text)} 字符")
+
+        return corrected_text
+
+    except Exception as e:
+        logger.warning(f"文本修正失敗，使用原文: {e}")
+        return text
+
+
+# ================================
 # Main Processing Function
 # ================================
 def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
                       model_name: str, temperature: float, max_tokens: int,
-                      max_context_chars: int, timeout_secs: int) -> Optional[AudioOutline]:
+                      max_context_chars: int, timeout_secs: int,
+                      correct_errors: bool = False) -> Optional[AudioOutline]:
     """
     Process a single audio transcript JSON file to extract structured topic outline using LLM.
 
     This is the main orchestration function that:
     1. Loads audio JSON and builds timestamp mapping
-    2. Chunks text if needed (based on max_context_chars)
-    3. Sends each chunk to LLM for topic extraction
-    4. Merges chunk results into final outline
+    2. Optionally corrects transcription errors using LLM
+    3. Chunks text if needed (based on max_context_chars)
+    4. Sends each chunk to LLM for topic extraction
+    5. Merges chunk results into final outline
 
     Supports multiple LLM providers:
     - GPT models (OpenAI): Uses client.beta.chat.completions.parse()
@@ -501,6 +713,7 @@ def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
         max_tokens: Maximum output tokens
         max_context_chars: Max characters per chunk (triggers chunking if exceeded)
         timeout_secs: API timeout in seconds
+        correct_errors: If True, use LLM to correct transcription errors before topic extraction
 
     Returns:
         AudioOutline: Structured outline with topics, or None if processing fails
@@ -512,14 +725,42 @@ def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
         audio_info = load_audio_with_timestamp_info(audio_file)
         logger.info(f"載入完成，總時長 {audio_info['total_duration']:.1f} 秒，{len(audio_info['full_text'])} 字符")
 
-        # 2) 分塊處理
+        # Keep original text
+        original_text = audio_info['full_text']
+
+        # 2) 可選：修正轉錄錯誤
+        corrected_text = ""
+        if correct_errors:
+            logger.info(f"開始修正轉錄錯誤...")
+            corrected_text = correct_transcription_errors(
+                text=audio_info['full_text'],
+                client=client,
+                model_name=model_name,
+                temperature=0.3,  # Lower temperature for correction task
+                max_tokens=max_tokens,
+                timeout_secs=timeout_secs
+            )
+            # Use corrected text for processing
+            audio_info['full_text'] = corrected_text
+
+            # Update segments to use corrected text
+            # Split corrected text back into segments (approximate, maintains timestamps)
+            corrected_parts = corrected_text.split('\n\n')
+            for i, seg in enumerate(audio_info['segments']):
+                if i < len(corrected_parts):
+                    seg['text'] = corrected_parts[i]
+        else:
+            # If not correcting, use original text for processing
+            corrected_text = original_text
+
+        # 3) 分塊處理
         text_chunks = produce_text_chunks(audio_info, max_context_chars)
         logger.info(f"分成 {len(text_chunks)} 個塊進行處理")
 
         all_chunk_outlines = []
         audio_title = None
 
-        # 3) 處理每個文本塊
+        # 4) 處理每個文本塊
         for chunk in text_chunks:
             chunk_text = chunk['text']
             chunk_num = chunk['chunk_num']
@@ -562,8 +803,8 @@ def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
 
                 if 'gpt' in model_name.lower() or 'cpatonn/qwen3' in model_name.lower()\
                     or 'gemini-' in model_name.lower():
-                    # Use structured output API
-                    common_params["response_format"] = AudioOutline
+                    # Use structured output API with AudioChunkOutline (no full_text)
+                    common_params["response_format"] = AudioChunkOutline
                     completion = client.beta.chat.completions.parse(**common_params)
                     chunk_outline = completion.choices[0].message.parsed
 
@@ -575,7 +816,7 @@ def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
                     # Parse JSON response
                     raw_json = completion.choices[0].message.content
                     parsed_data = json.loads(raw_json)
-                    chunk_outline = AudioOutline(**parsed_data)
+                    chunk_outline = AudioChunkOutline(**parsed_data)
 
                 logger.info(f"第 {chunk_num} 塊完成，提取到 {len(chunk_outline.main_topics)} 個主題")
 
@@ -593,19 +834,30 @@ def process_audio_file(audio_file: str, client: OpenAI, system_instruction: str,
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
-        # 4) 合併所有塊的結果
+        # 5) 合併所有塊的結果
         merged_topics = []
         for outline in all_chunk_outlines:
             merged_topics.extend(outline.main_topics)
 
-        # 5) 去重
+        # 6) 去重
         final_topics = deduplicate_topics(merged_topics, similarity_threshold=0.7)
 
-        # 6) 構造最終 AudioOutline
-        # Note: Text can be extracted later using extract_text_by_timestamp() helper
+        # 6.5) 提取每個主題對應的文本內容（使用修正後的文本）
+        logger.info(f"提取主題對應的文本內容...")
+        for topic in final_topics:
+            # Extract text from corrected_text by finding segments in timestamp range
+            topic.text = extract_text_by_timestamp(
+                topic.starting_timestamp,
+                topic.ending_timestamp,
+                audio_info['segments']
+            )
+
+        # 7) 構造最終 AudioOutline（包含 full_text 和 correct_text）
         final_outline = AudioOutline(
             filename=os.path.basename(audio_file),
             audio_title=audio_title or os.path.splitext(os.path.basename(audio_file))[0],
+            full_text=original_text,
+            correct_text=corrected_text,
             main_topics=final_topics
         )
 
@@ -627,8 +879,8 @@ def main():
     """Main CLI entry point."""
     load_dotenv()
 
-    parser = argparse.ArgumentParser(description="音頻主題提取工具")
-    parser.add_argument('--audio', type=str, required=True, help="音頻 JSON 文件路徑（支持萬用字元）")
+    parser = argparse.ArgumentParser(description="音頻主題提取工具 (支持 SRT 和 JSON 格式)")
+    parser.add_argument('--audio', type=str, required=True, help="音頻轉錄文件路徑 (.srt 或 .json，支持萬用字元)")
     parser.add_argument('--out_dir', type=str, default='audio_outlines', help="輸出目錄")
     parser.add_argument('--provider', type=str,
                        choices=config_manager.get_available_providers(),
@@ -642,7 +894,9 @@ def main():
                        help="日誌級別")
     parser.add_argument('--overwrite', action='store_true',
                        help="如果指定，將覆蓋已存在的輸出文件")
-
+    parser.add_argument('--disable_correction', dest='correct_errors', action='store_false', default=True,
+                       help="停用 LLM 文本修正功能（默認啟用修正）")
+    
     args = parser.parse_args()
 
     # 設置日誌級別
@@ -657,6 +911,11 @@ def main():
 
         logger.info(f"使用供應商: {args.provider or config_manager.default_provider}")
         logger.info(f"模型: {provider_config.model_name}")
+
+        if args.correct_errors:
+            logger.info(f"✅ 轉錄錯誤修正: 啟用（將在主題提取前先修正文本）")
+        else:
+            logger.info(f"⏭️  轉錄錯誤修正: 停用")
 
     except ValueError as e:
         logger.error(f"配置錯誤: {e}")
@@ -721,15 +980,22 @@ def main():
 
     logger.info(f"找到 {len(audio_files)} 個音頻文件待處理")
 
-    # Create output directory
-    os.makedirs(args.out_dir, exist_ok=True)
+    # Create output directory with model name subdirectory
+    # Format: {out_dir}/{model_name}/
+    # Sanitize model name for use in path (replace slashes with underscores)
+    safe_model_name = model_name.replace('/', '_').replace('\\', '_')
+    model_output_dir = os.path.join(args.out_dir, safe_model_name)
+    os.makedirs(model_output_dir, exist_ok=True)
+
+    logger.info(f"輸出目錄: {model_output_dir}")
 
     # Process each audio file
     successful_count = 0
     for audio_file in audio_files:
-        # Check if output already exists
-        output_filename = os.path.splitext(os.path.basename(audio_file))[0] + '_topics.json'
-        output_path = os.path.join(args.out_dir, output_filename)
+        # Generate output filename: {basename}_outline.json
+        basename = os.path.splitext(os.path.basename(audio_file))[0]
+        output_filename = f"{basename}_outline.json"
+        output_path = os.path.join(model_output_dir, output_filename)
 
         if os.path.exists(output_path) and not args.overwrite:
             logger.info(f"跳過已存在的文件: {output_path}")
@@ -749,7 +1015,8 @@ def main():
                 temperature=provider_config.temperature,
                 max_tokens=provider_config.max_tokens,
                 max_context_chars=provider_config.max_context_chars,
-                timeout_secs=args.timeout
+                timeout_secs=args.timeout,
+                correct_errors=args.correct_errors
             )
 
         except Exception as e:
@@ -767,7 +1034,8 @@ def main():
                         temperature=backup_provider_config.temperature,
                         max_tokens=backup_provider_config.max_tokens,
                         max_context_chars=backup_provider_config.max_context_chars,
-                        timeout_secs=args.timeout
+                        timeout_secs=args.timeout,
+                        correct_errors=args.correct_errors
                     )
                     logger.info(f"✅ 備用供應商處理成功")
                 except Exception as backup_e:
@@ -799,7 +1067,7 @@ def main():
             logger.error(f"❌ 所有供應商均失敗，跳過文件: {audio_file}")
 
     logger.info(f"\n✅ 處理完成！成功: {successful_count}/{len(audio_files)}")
-    logger.info(f"輸出目錄: {args.out_dir}")
+    logger.info(f"輸出目錄: {model_output_dir}")
 
 
 if __name__ == '__main__':

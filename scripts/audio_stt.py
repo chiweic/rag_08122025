@@ -113,54 +113,6 @@ def load_deduplicated_videos(input_path: Path) -> List[Dict]:
     return non_duplicate_videos
 
 
-def download_youtube_audio(url: str, output_path: Path) -> Optional[Path]:
-    """
-    Download audio from YouTube video using yt-dlp.
-
-    Args:
-        url: YouTube video URL
-        output_path: Directory to save audio file
-
-    Returns:
-        Path to downloaded audio file, or None if failed
-    """
-    if not HAS_YT_DLP:
-        logger.error("yt-dlp not installed, cannot download YouTube videos")
-        return None
-
-    try:
-        output_path.mkdir(parents=True, exist_ok=True)
-
-        # yt-dlp options for audio extraction
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': str(output_path / '%(id)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-        }
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            video_id = info['id']
-            audio_file = output_path / f"{video_id}.mp3"
-
-            if audio_file.exists():
-                logger.info(f"Downloaded audio: {audio_file}")
-                return audio_file
-            else:
-                logger.error(f"Audio file not found after download: {audio_file}")
-                return None
-
-    except Exception as e:
-        logger.error(f"Failed to download audio from {url}: {e}")
-        return None
-
-
 def transcribe_with_whisper(audio_file: Path, client: OpenAI) -> Optional[List[Dict]]:
     """
     Transcribe audio file using OpenAI Whisper API.
@@ -282,155 +234,6 @@ def process_video(
 
     return True
 
-
-def main():
-    """Main execution function."""
-    parser = argparse.ArgumentParser(
-        description="Process non-duplicate videos with STT and produce timestamped JSON"
-    )
-    parser.add_argument(
-        '--input',
-        type=str,
-        default='raw_data/video_metadata_records_dedup.json',
-        help='Input deduplicated video metadata JSON'
-    )
-    parser.add_argument(
-        '--output_dir',
-        type=str,
-        default='video_transcripts',
-        help='Output directory for transcript JSON files'
-    )
-    parser.add_argument(
-        '--temp_dir',
-        type=str,
-        default='temp_audio',
-        help='Temporary directory for downloaded audio files'
-    )
-    parser.add_argument(
-        '--provider',
-        type=str,
-        default='openai',
-        help='STT provider (currently only openai/whisper supported)'
-    )
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=None,
-        help='Limit number of videos to process (for testing)'
-    )
-    parser.add_argument(
-        '--resume',
-        type=str,
-        default=None,
-        help='Resume from specific video ID'
-    )
-    parser.add_argument(
-        '--skip_existing',
-        action='store_true',
-        default=True,
-        help='Skip videos that already have transcripts'
-    )
-
-    args = parser.parse_args()
-
-    # Setup paths
-    input_path = Path(args.input)
-    output_dir = Path(args.output_dir)
-    temp_dir = Path(args.temp_dir)
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    temp_dir.mkdir(parents=True, exist_ok=True)
-
-    # Validate input
-    if not input_path.exists():
-        logger.error(f"Input file not found: {input_path}")
-        return
-
-    # Initialize OpenAI client for Whisper
-    if args.provider.lower() != 'openai':
-        logger.warning(f"Provider '{args.provider}' specified, but only OpenAI Whisper is currently supported")
-        logger.info("Using OpenAI Whisper API...")
-
-    try:
-        provider_config = config_manager.get_provider_config('openai')
-        client = OpenAI(
-            api_key=provider_config.api_key,
-            base_url=provider_config.base_url
-        )
-        logger.info(f"Initialized OpenAI client (base_url: {provider_config.base_url})")
-    except Exception as e:
-        logger.error(f"Failed to initialize OpenAI client: {e}")
-        return
-
-    # Load videos
-    videos = load_deduplicated_videos(input_path)
-
-    if not videos:
-        logger.error("No videos to process")
-        return
-
-    # Handle resume
-    if args.resume:
-        resume_idx = next((i for i, v in enumerate(videos) if v['video_id'] == args.resume), None)
-        if resume_idx is not None:
-            videos = videos[resume_idx:]
-            logger.info(f"Resuming from video {args.resume} (index {resume_idx})")
-        else:
-            logger.warning(f"Resume video ID '{args.resume}' not found, starting from beginning")
-
-    # Handle limit
-    if args.limit:
-        videos = videos[:args.limit]
-        logger.info(f"Limiting to first {args.limit} videos")
-
-    # Process videos
-    logger.info(f"\n{'='*60}")
-    logger.info(f"Starting video processing: {len(videos)} videos")
-    logger.info(f"{'='*60}\n")
-
-    success_count = 0
-    failure_count = 0
-
-    for idx, video in enumerate(videos, 1):
-        logger.info(f"\n[{idx}/{len(videos)}] Processing video...")
-
-        try:
-            success = process_video(
-                video=video,
-                output_dir=output_dir,
-                temp_dir=temp_dir,
-                client=client,
-                skip_existing=args.skip_existing
-            )
-
-            if success:
-                success_count += 1
-            else:
-                failure_count += 1
-
-        except Exception as e:
-            logger.error(f"Unexpected error processing video {video.get('video_id', 'unknown')}: {e}")
-            failure_count += 1
-
-        # Progress update
-        if idx % 10 == 0:
-            logger.info(f"\n{'='*60}")
-            logger.info(f"Progress: {idx}/{len(videos)} videos processed")
-            logger.info(f"Success: {success_count}, Failures: {failure_count}")
-            logger.info(f"{'='*60}\n")
-
-    # Final summary
-    logger.info(f"\n{'='*60}")
-    logger.info(f"Video STT Processing Complete!")
-    logger.info(f"{'='*60}")
-    logger.info(f"Total videos processed: {len(videos)}")
-    logger.info(f"Successful: {success_count}")
-    logger.info(f"Failed: {failure_count}")
-    logger.info(f"Output directory: {output_dir}")
-    logger.info(f"Log file: {log_file}")
-    logger.info(f"{'='*60}\n")
-
-
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -483,13 +286,14 @@ def clean_segments(segments: List[Dict]) -> List[Dict]:
             continue
 
         # Check if segment is too short (< 3 characters, likely a fragment)
-        if len(text) < 3:
-            logger.warning(f"Found short fragment at {start}s: '{text}'")
+        # questionable, as we may have quite a few of those
+        #if len(text) < 3:
+        #    logger.warning(f"Found short fragment at {start}s: '{text}'")
             # Accumulate short fragments
-            if accumulated_start is None:
-                accumulated_start = start
-            accumulated_text.append(text)
-            continue
+        #    if accumulated_start is None:
+        #        accumulated_start = start
+        #    accumulated_text.append(text)
+        #    continue
 
         # If we have accumulated fragments, merge them with current segment
         if accumulated_text:
@@ -520,7 +324,8 @@ def transcribe_video_gemini(
     client: genai.Client,
     provider_config: Any,
     output_dir: Path,
-    prompt: str
+    prompt: str,
+    overwrite: bool = False
 ) -> bool:
     """
     Transcribe a single video using Gemini with structured output.
@@ -531,6 +336,7 @@ def transcribe_video_gemini(
         provider_config: Provider configuration with model_name, temperature
         output_dir: Directory to save transcript JSON
         prompt: Transcription prompt
+        overwrite: If True, overwrite existing transcript files; if False, skip existing files
 
     Returns:
         True if successful, False otherwise
@@ -541,9 +347,9 @@ def transcribe_video_gemini(
 
     output_file = output_dir / f"{video_id}.json"
 
-    # Skip if already processed
-    if output_file.exists():
-        logger.info(f"⏭️  Skipping {video_id} - already transcribed")
+    # Skip if already processed (unless overwrite=True)
+    if output_file.exists() and not overwrite:
+        logger.info(f"⏭️  Skipping {video_id} - already transcribed (use --overwrite to reprocess)")
         return True
 
     logger.info(f"🎬 Processing: {title}")
@@ -565,11 +371,11 @@ def transcribe_video_gemini(
             config={
                 "response_mime_type": "application/json",
                 "response_json_schema": VideoTranscript.model_json_schema(),
-                # "temperature": provider_config.temperature,
-                "max_output_tokens": 65000,  # Increase limit for long videos
+                "temperature": provider_config.temperature,
+                "max_output_tokens": provider_config.max_tokens
             },
         )
-
+        
         # Check if response was truncated due to token limit
         if hasattr(response, 'candidates') and response.candidates:
             candidate = response.candidates[0]
@@ -641,7 +447,7 @@ def process_videos_batch(
     output_dir: str = 'video_transcripts',
     provider: str = 'gemini',
     limit: Optional[int] = None,
-    resume_from: Optional[str] = None
+    overwrite: bool = False
 ):
     """
     Process all non-duplicate videos from video metadata JSON.
@@ -651,7 +457,7 @@ def process_videos_batch(
         output_dir: Directory to save transcript JSON files
         provider: LLM provider to use (default: gemini)
         limit: Maximum number of videos to process (for testing)
-        resume_from: Resume from specific video_id
+        overwrite: If True, overwrite existing transcript files; if False, skip existing files (auto-resume)
     """
     # Setup
     input_path = Path(input_json)
@@ -676,15 +482,6 @@ def process_videos_batch(
     logger.info(f"Non-duplicate videos: {len(non_duplicate_videos)}")
     logger.info(f"Duplicate videos (skipped): {len(all_videos) - len(non_duplicate_videos)}")
 
-    # Handle resume
-    if resume_from:
-        resume_idx = next((i for i, v in enumerate(non_duplicate_videos) if v['video_id'] == resume_from), None)
-        if resume_idx is not None:
-            non_duplicate_videos = non_duplicate_videos[resume_idx:]
-            logger.info(f"Resuming from video {resume_from} (index {resume_idx})")
-        else:
-            logger.warning(f"Resume video ID '{resume_from}' not found, starting from beginning")
-
     # Handle limit
     if limit:
         non_duplicate_videos = non_duplicate_videos[:limit]
@@ -694,15 +491,25 @@ def process_videos_batch(
         logger.error("No videos to process")
         return
 
-    # Initialize Gemini client
-    provider_config = config_manager.get_provider_config(provider)
-    client = genai.Client(api_key=provider_config.api_key)
+    # Log resume behavior
+    if not overwrite:
+        logger.info(f"Auto-resume enabled: existing transcripts will be skipped")
+    else:
+        logger.info(f"Overwrite enabled: all videos will be reprocessed")
 
-    logger.info(f"Using model: {provider_config.model_name}")
-    logger.info(f"Temperature: {provider_config.temperature}")
+    
+    # gemini can take yourube url as input
+    if provider == 'gemini':
 
-    # Transcription prompt
-    prompt = """你是一位專業的語音辨識專家。請仔細聆聽影片內容，生成準確且高品質的繁體中文逐字稿。
+        # Initialize Gemini client
+        provider_config = config_manager.get_provider_config(provider)
+        client = genai.Client(api_key=provider_config.api_key)
+
+        logger.info(f"Using model: {provider_config.model_name}")
+        logger.info(f"Temperature: {provider_config.temperature}")
+
+        # Transcription prompt
+        prompt = """你是一位專業的語音辨識專家。請仔細聆聽影片內容，生成準確且高品質的繁體中文逐字稿。
 
 **重要提示**：此影片包含硬編碼字幕（hardcoded subtitles），你可以參考這些字幕來確保轉錄的準確性，但請務必依照以下要求重新組織和輸出：
 
@@ -716,44 +523,202 @@ def process_videos_batch(
 
 請將影片中的所有說話內容轉錄為帶有時間戳的繁體中文文字。利用硬編碼字幕提高準確度，但要重新組織為自然、完整的語意片段，不要產生只有幾個字的碎片。"""
 
-    # Process videos
-    logger.info(f"\n{'='*60}")
-    logger.info(f"Starting batch video transcription: {len(non_duplicate_videos)} videos")
-    logger.info(f"{'='*60}\n")
+        # Process videos
+        logger.info(f"{'='*60}")
+        logger.info(f"Starting batch video transcription: {len(non_duplicate_videos)} videos")
+        logger.info(f"{'='*60}")
 
-    success_count = 0
-    failure_count = 0
+        success_count = 0
+        failure_count = 0
 
-    for idx, video in enumerate(non_duplicate_videos, 1):
-        logger.info(f"\n[{idx}/{len(non_duplicate_videos)}] Processing video...")
+        for idx, video in enumerate(non_duplicate_videos, 1):
+            logger.info(f"\n[{idx}/{len(non_duplicate_videos)}] Processing video...")
 
-        try:
-            success = transcribe_video_gemini(
-                video=video,
-                client=client,
-                provider_config=provider_config,
-                output_dir=output_path,
-                prompt=prompt
-            )
+            try:
+                success = transcribe_video_gemini(
+                    video=video,
+                    client=client,
+                    provider_config=provider_config,
+                    output_dir=output_path,
+                    prompt=prompt,
+                    overwrite=overwrite
+                )
 
-            if success:
-                success_count += 1
-            else:
+                if success:
+                    success_count += 1
+                else:
+                    failure_count += 1
+
+            except Exception as e:
+                logger.error(f"Unexpected error processing video {video.get('video_id', 'unknown')}: {e}")
                 failure_count += 1
 
-        except Exception as e:
-            logger.error(f"Unexpected error processing video {video.get('video_id', 'unknown')}: {e}")
-            failure_count += 1
+            # Progress update every 10 videos
+            if idx % 10 == 0:
+                logger.info(f"\n{'='*60}")
+                logger.info(f"Progress: {idx}/{len(non_duplicate_videos)} videos processed")
+                logger.info(f"Success: {success_count}, Failures: {failure_count}")
+                logger.info(f"{'='*60}\n")
 
-        # Progress update every 10 videos
-        if idx % 10 == 0:
-            logger.info(f"\n{'='*60}")
-            logger.info(f"Progress: {idx}/{len(non_duplicate_videos)} videos processed")
-            logger.info(f"Success: {success_count}, Failures: {failure_count}")
-            logger.info(f"{'='*60}\n")
+    elif provider == 'dashscope':
+
+        from funasr import AutoModel
+        model_name='paraformer-zh'
+        model = AutoModel(model=model_name, #odel_revision="v2.0.4",
+                  vad_model="fsmn-vad", #vad_model_revision="v2.0.4",
+                  punc_model="ct-punc-c", #punc_model_revision="v2.0.4",
+                  # spk_model="cam++", spk_model_revision="v2.0.2",
+                  )
+        
+        logger.info(f"Using FunASR model: paraformer-zh v2.0.4")
+
+        success_count = 0
+        failure_count = 0
+
+        for idx, video in enumerate(non_duplicate_videos, 1):
+            logger.info(f"\n[{idx}/{len(non_duplicate_videos)}] Processing video...")
+
+            video_id = video['video_id']
+            title = video.get('title', '')
+
+            # Check if transcript already exists
+            output_file = output_path / f"{video_id}.json"
+            if output_file.exists() and not overwrite:
+                logger.info(f"⏭️  Skipping {video_id} - already transcribed (use --overwrite to reprocess)")
+                success_count += 1
+                continue
+
+            logger.info(f"🎬 Processing: {title}")
+            logger.info(f"   Video ID: {video_id}")
+
+            audio_extracted_path = os.path.join('/home/chiweic/repository/audio_data', video['video_id']+'.mp3')
+            logger.info(f"   Audio path: {audio_extracted_path}")
+
+            if not Path(audio_extracted_path).exists():
+                logger.error(f"❌ Audio file does not exist: {audio_extracted_path}")
+                failure_count += 1
+                continue
+
+            try:
+                # FunASR transcription
+                logger.info(f"   Transcribing with FunASR...")
+                res = model.generate(
+                    input=audio_extracted_path,
+                    batch_size_s=300,
+                    sentence_timestamp=True,  # Enable sentence-level timestamps with text
+                    #hotword='魔搭'
+                )
+
+                # Parse FunASR result
+                # FunASR returns: [{'key': 'audio_file', 'text': '...', 'timestamp': [[start_ms, end_ms, 'word'], ...]}]
+                if not res or len(res) == 0:
+                    logger.error(f"❌ FunASR returned empty result")
+                    failure_count += 1
+                    continue
+
+                result = res[0]
+                full_text = result.get('text', '')
+                timestamps = result.get('timestamp', [])
+                sentence_info = result.get('sentence_info', [])  # FunASR returns sentence_info with sentence_timestamp=True
+
+                logger.info(f"✅ Transcription complete: {len(full_text)} characters")
+
+                # Debug: Log what keys are in the result
+                logger.info(f"   Result keys: {list(result.keys())}")
+                logger.info(f"   Has sentence_info: {len(sentence_info) if sentence_info else 0}")
+                logger.info(f"   Has timestamps: {len(timestamps) if timestamps else 0}")
+
+                # Debug: Show first sentence if available
+                if sentence_info and len(sentence_info) > 0:
+                    logger.info(f"   First sentence sample: {sentence_info[0]}")
+
+                # Convert FunASR timestamp format to our segment format
+                segments = []
+
+                # Try sentence-level timestamps first (if available)
+                if sentence_info and len(sentence_info) > 0:
+                    logger.info(f"   Using sentence-level timestamps ({len(sentence_info)} sentences)")
+                    for sent in sentence_info:
+                        if isinstance(sent, dict):
+                            start = sent.get('start', 0) / 1000.0  # Convert ms to seconds
+                            end = sent.get('end', 0) / 1000.0
+                            text = sent.get('text', '')
+                            if text:
+                                segments.append({
+                                    'start': start,
+                                    'end': end,
+                                    'text': text
+                                })
+
+                # Otherwise use word-level timestamps
+                elif timestamps and len(timestamps) > 0:
+                    logger.info(f"   Using word-level timestamps ({len(timestamps)} words)")
+                    for ts in timestamps:
+                        # FunASR timestamp format: [start_ms, end_ms] (no text)
+                        start_ms, end_ms = ts[0], ts[1]
+                        # Timestamps only contain timing, text needs to be extracted separately
+                        segments.append({
+                                'start': start_ms / 1000.0,  # Convert ms to seconds
+                                'end': end_ms / 1000.0,
+                                'text': ''  # Text will be populated later
+                            })
+
+                # If we have word-level segments without text, we need to extract text from full_text
+                # For now, create a single segment with the full text
+                if not segments or (segments and not segments[0].get('text')):
+                    logger.warning(f"⚠️  No sentence-level timestamps available, creating single segment with full text")
+                    segments = [{
+                        'start': 0.0,
+                        'end': 0.0,
+                        'text': full_text
+                    }]
+
+                logger.info(f"   Parsed {len(segments)} segments")
+
+                # Clean segments (remove duplicates, merge fragments)
+                cleaned_segments = clean_segments(segments)
+
+                # Save to file in same format as Gemini
+                output_data = {
+                    'video_id': video_id,
+                    'url': video.get('url', ''),
+                    'title': title,
+                    'channel': video.get('channel', ''),
+                    'transcribed_at': datetime.now().isoformat(),
+                    'transcription_model': 'funasr-paraformer-zh-v2.0.4',
+                    'segments': cleaned_segments,
+                    'full_text': full_text
+                }
+
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(output_data, f, ensure_ascii=False, indent=2)
+
+                logger.info(f"✅ Saved: {output_file}")
+
+                # Statistics
+                if cleaned_segments:
+                    total_duration = cleaned_segments[-1]['end'] if cleaned_segments[-1]['end'] > 0 else 0
+                    logger.info(f"   Segments: {len(cleaned_segments)}, Duration: {total_duration/60:.1f} min")
+
+                success_count += 1
+
+            except Exception as e:
+                logger.error(f"❌ Failed to transcribe {video_id}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                failure_count += 1
+
+            # Progress update every 10 videos
+            if idx % 10 == 0:
+                logger.info(f"\n{'='*60}")
+                logger.info(f"Progress: {idx}/{len(non_duplicate_videos)} videos processed")
+                logger.info(f"Success: {success_count}, Failures: {failure_count}")
+                logger.info(f"{'='*60}\n")
+
+
 
     # Final summary
-    logger.info(f"\n{'='*60}")
+    logger.info(f"{'='*60}")
     logger.info(f"Batch Video Transcription Complete!")
     logger.info(f"{'='*60}")
     logger.info(f"Total videos processed: {len(non_duplicate_videos)}")
@@ -764,82 +729,29 @@ def process_videos_batch(
     logger.info(f"{'='*60}\n")
 
 
-def video_stt_gemini_test():
-    """Test function for Gemini YouTube transcription with structured output."""
-    print('Test code on gemini yt transcription with structured output')
-
-    youtube_url = 'https://www.youtube.com/watch?v=nSRKWhNMx40'
-
-    # Create a mock video object
-    test_video = {
-        'video_id': youtube_url.split('=')[-1],
-        'url': youtube_url,
-        'title': 'Test Video',
-        'channel': 'Test Channel'
-    }
-
-    provider_config = config_manager.get_provider_config(provider='gemini')
-    client = genai.Client(api_key=provider_config.api_key)
-    output_dir = Path('video_transcripts')
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    prompt = """你是一位專業的語音辨識專家。請仔細聆聽影片內容，生成準確且高品質的繁體中文逐字稿。
-
-**重要提示**：此影片包含硬編碼字幕（hardcoded subtitles），你可以參考這些字幕來確保轉錄的準確性，但請務必依照以下要求重新組織和輸出：
-
-轉錄要求：
-1. **完整轉錄**：逐字記錄所有說話內容，不要遺漏或省略任何字句。可參考影片中的硬編碼字幕確保用字準確。
-2. **自然分段**：每個片段應包含完整的句子或語意單元（約 5-15 秒長度）。不要機械性地複製字幕的分段方式，而是根據語意和自然語調重新分段。
-3. **避免重複**：不要產生重複的片段，確保每段文字都是獨特且有意義的內容。即使字幕出現重複，也只記錄一次。
-4. **語意完整**：每個片段的文字應該是完整的語句，不要在句子中間斷開。
-5. **準確時間戳**：確保時間戳連續且不重疊，精確對應說話時間（而非字幕顯示時間）。
-6. **文字修正**：如果發現字幕有錯字或不通順之處，請根據聲音內容修正為正確的繁體中文。
-
-請將影片中的所有說話內容轉錄為帶有時間戳的繁體中文文字。利用硬編碼字幕提高準確度，但要重新組織為自然、完整的語意片段，不要產生只有幾個字的碎片。"""
-
-    print(f"Using model: {provider_config.model_name}")
-    print(f"Processing test video: {youtube_url}\n")
-
-    success = transcribe_video_gemini(
-        video=test_video,
-        client=client,
-        provider_config=provider_config,
-        output_dir=output_dir,
-        prompt=prompt
-    )
-
-    if success:
-        print("\n✅ Test completed successfully!")
-    else:
-        print("\n❌ Test failed!")
-    
-
 if __name__ == "__main__":
+    
     import argparse
 
-    parser = argparse.ArgumentParser(description="Video STT using Gemini API")
-    parser.add_argument('--mode', choices=['test', 'batch'], default='test',
-                       help='Run mode: test (single video) or batch (all non-duplicate videos)')
-    parser.add_argument('--input', default='raw_data/video_metadata_records_dedup.json',
-                       help='Input deduplicated video metadata JSON')
-    parser.add_argument('--output_dir', default='video_transcripts',
-                       help='Output directory for transcript JSON files')
-    parser.add_argument('--provider', default='gemini',
-                       help='LLM provider (default: gemini)')
-    parser.add_argument('--limit', type=int, default=None,
-                       help='Limit number of videos to process (for testing)')
-    parser.add_argument('--resume', default=None,
-                       help='Resume from specific video_id')
+    parser = argparse.ArgumentParser(description="Convert audio to text using local LLM/ASR API")
+    
+    # user will need to build up json that contain multiple
+    # {
+    # "audios": [
+    #    {audio_src: absoulete path of the audio}
+    #    {srt: absoulete path on the target output in srt format}
+    # ]
+    # }
 
+    parser.add_argument('--input', default='raw_data/video_metadata_records_dedup.json',
+                       help='Input video metadata JSON file with list of videos to process')
     args = parser.parse_args()
 
-    if args.mode == 'test':
-        video_stt_gemini_test()
-    else:
-        process_videos_batch(
-            input_json=args.input,
-            output_dir=args.output_dir,
-            provider=args.provider,
-            limit=args.limit,
-            resume_from=args.resume
-        )
+    #process_videos_batch(
+    #    input_json=args.input,
+    #    output_dir=args.out_dir,
+    #    provider=args.provider,
+    #    limit=args.limit,
+    #    overwrite=args.overwrite
+    #)
+

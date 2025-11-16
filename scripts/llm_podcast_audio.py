@@ -7,20 +7,26 @@ It supports multi-speaker dialogue with configurable voice profiles.
 
 Supported TTS Providers:
 - DashScope (Alibaba Cloud CosyVoice-v2)
-- Google Gemini (Text-to-Speech)
+- Google Gemini (Text-to-Speech with multi-speaker support)
+- ElevenLabs (High-quality neural TTS)
 
 Key Features:
-- Multi-provider TTS support (DashScope, Gemini)
+- Multi-provider TTS support (DashScope, Gemini, ElevenLabs)
 - Multi-speaker voice mapping
 - Audio segment generation with metadata
 - Batch processing for multiple podcast episodes
+- Gemini: Multi-speaker batch generation
+- DashScope/ElevenLabs: Individual segment generation
 
 Usage:
     # Generate audio using DashScope (default)
     python llm_podcast_audio.py --podcast podcasts/05.03.pdf.podcast.json
 
-    # Generate audio using Gemini
+    # Generate audio using Gemini (multi-speaker)
     python llm_podcast_audio.py --podcast podcasts/05.03.pdf.podcast.json --provider gemini
+
+    # Generate audio using ElevenLabs
+    python llm_podcast_audio.py --podcast podcasts/05.03.pdf.podcast.json --provider elevenlabs
 
     # Batch process all podcasts
     python llm_podcast_audio.py --podcast "podcasts/*.podcast.json" --provider dashscope
@@ -29,7 +35,7 @@ Usage:
     python llm_podcast_audio.py --podcast podcasts/05.03.pdf.podcast.json --out_dir audio_output
 
 Author: DDM RAG Team
-Last Updated: 2025-11-09
+Last Updated: 2025-11-11
 """
 import os
 import sys
@@ -82,6 +88,13 @@ except ImportError:
     GEMINI_AVAILABLE = False
     logger.warning("Google Gemini SDK not available. Install with: pip install google-generativeai")
 
+try:
+    from elevenlabs.client import ElevenLabs
+    ELEVENLABS_AVAILABLE = True
+except ImportError:
+    ELEVENLABS_AVAILABLE = False
+    logger.warning("ElevenLabs SDK not available. Install with: pip install elevenlabs")
+
 # ================================
 # Configuration
 # ================================
@@ -89,6 +102,7 @@ except ImportError:
 # API Keys
 DASHSCOPE_API_KEY = os.getenv('DASHSCOPE_API_KEY', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY', '')
 
 # Voice Profiles for different providers
 DASHSCOPE_VOICE_PROFILES = {
@@ -99,6 +113,11 @@ DASHSCOPE_VOICE_PROFILES = {
 GEMINI_VOICE_PROFILES = {
     "anchor": "Zephyr",            # Calm, professional voice
     "guest": "Charon"                # Warm, authoritative voice
+}
+
+ELEVENLABS_VOICE_PROFILES = {
+    "anchor": "9lHjugDhwqoxA5MhX0az",  # Professional female voice
+    "guest": "BrbEfHMQu0fyclQR7lfh"   # Clear male voice
 }
 
 # Audio segment naming
@@ -407,6 +426,63 @@ Conversation to format:
 
 
 # ================================
+# ElevenLabs TTS Provider
+# ================================
+
+class ElevenLabsTTSProvider(TTSProvider):
+    """ElevenLabs TTS provider implementation."""
+
+    def __init__(self, api_key: str):
+        """Initialize ElevenLabs provider."""
+        if not ELEVENLABS_AVAILABLE:
+            raise ImportError("ElevenLabs SDK not available. Install with: pip install elevenlabs")
+
+        self.api_key = api_key
+        self.client = ElevenLabs(
+            api_key=api_key,
+            base_url="https://api.elevenlabs.io"
+        )
+        self.model = "eleven_multilingual_v2"  # Supports multiple languages including Chinese
+        self.output_format = "mp3_44100_128"
+
+    def generate_audio(self, text: str, voice: str, output_path: str) -> bool:
+        """Generate audio using ElevenLabs TTS API."""
+        try:
+            logger.info(f"生成音頻片段 (ElevenLabs): {output_path[:50]}... (voice_id: {voice[:8]}...)")
+
+            # Generate audio using ElevenLabs text_to_speech API
+            audio_generator = self.client.text_to_speech.convert(
+                voice_id=voice,
+                output_format=self.output_format,
+                text=text,
+                model_id=self.model
+            )
+
+            # Save audio to file
+            # The convert method returns a generator of audio chunks
+            with open(output_path, 'wb') as f:
+                for chunk in audio_generator:
+                    f.write(chunk)
+
+            logger.info(f"   ✅ 已保存 (ElevenLabs): {output_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"   ❌ ElevenLabs 生成音頻片段時發生錯誤: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
+
+    def get_voice_profiles(self) -> Dict[str, str]:
+        """Get ElevenLabs voice profiles."""
+        return ELEVENLABS_VOICE_PROFILES
+
+    def get_audio_format(self) -> str:
+        """Get audio format extension."""
+        return "mp3"
+
+
+# ================================
 # Provider Factory
 # ================================
 
@@ -415,7 +491,7 @@ def create_tts_provider(provider_name: str) -> TTSProvider:
     Create TTS provider instance based on provider name.
 
     Args:
-        provider_name: Provider name ('dashscope' or 'gemini')
+        provider_name: Provider name ('dashscope', 'gemini', or 'elevenlabs')
 
     Returns:
         TTSProvider: Provider instance
@@ -435,8 +511,13 @@ def create_tts_provider(provider_name: str) -> TTSProvider:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
         return GeminiTTSProvider(GEMINI_API_KEY)
 
+    elif provider_name == "elevenlabs":
+        if not ELEVENLABS_API_KEY:
+            raise ValueError("ELEVENLABS_API_KEY not found in environment variables")
+        return ElevenLabsTTSProvider(ELEVENLABS_API_KEY)
+
     else:
-        raise ValueError(f"Unsupported TTS provider: {provider_name}. Choose 'dashscope' or 'gemini'")
+        raise ValueError(f"Unsupported TTS provider: {provider_name}. Choose 'dashscope', 'gemini', or 'elevenlabs'")
 
 
 # ================================
@@ -759,7 +840,7 @@ def main():
     parser.add_argument("--out_dir", type=str, default="podcast_audio",
                        help="輸出目錄 (預設：podcast_audio)")
     parser.add_argument("--provider", type=str, default="dashscope",
-                       choices=["dashscope", "gemini"],
+                       choices=["dashscope", "gemini", "elevenlabs"],
                        help="TTS 供應商選擇 (預設：dashscope)")
     parser.add_argument("--log_level", type=str, default="INFO",
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],

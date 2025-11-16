@@ -152,4 +152,11 @@ podcast_audio/
 raw_data/
 video_transcripts/
 reconstructed/
-audio_outlines
+audio_outlines/
+video_transcripts/
+prototype/
+mineru_output/
+pdf_outlines/
+outputs/
+ddm_audio_outlines/
+video_outlines/
